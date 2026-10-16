@@ -205,14 +205,32 @@ button:active{transform:scale(.98)}
 #story .story-hero-art{background-position:center}
 @media(min-width:1100px){#story .story-hero h1{max-width:850px}#story .story-hero>p{max-width:750px}}
 @media(max-width:700px){#story .story-hero{min-height:550px;padding:30px 24px}#story .story-hero h1{font-size:clamp(32px,8vw,48px)}#story .story-hero>p{font-size:14px}}
-</style></head><body><header><div class="brand-kicker"><span class="brand-dot"></span> ENVIRONMENTAL IMPACT ANALYTICS</div><h1>Looply <span style="font-weight:450;color:#a9c9ff">— LCA 데이터 분석</span></h1><p>환경영향을 숫자로 이해하고, 데이터로 탐색하다.<br>398개 환경성적표지 평가계수 기반 분석 · 시각화 · 시나리오 계산 워크스페이스</p></header><main class="wrap"><div class="top"><span class="pill" id="datasetBadge">평가계수 데이터 로딩 중</span><span class="muted">CARBON NAVY · ENVIRONMENTAL DATA REPORT</span><select id="theme" class="hidden" aria-label="고정 테마"><option value="navy" selected>Carbon Navy</option></select></div><nav class="tabs"><button data-tab="story" class="active">분석 리포트</button><button data-tab="calc">환경영향 계산</button><button data-tab="explore">데이터 인사이트</button><button data-tab="cluster">군집 분석</button><button data-tab="about">프로젝트 안내</button></nav>
+
+/* V3.7 unified brand, typographic hierarchy and natural Korean wrapping */
+.site-header{padding:13px max(24px,calc((100vw - 1250px)/2));min-height:0;display:flex;align-items:center}
+.site-brand{display:inline-flex;align-items:center;gap:11px;color:#fff;text-decoration:none;font-size:19px;font-weight:800;letter-spacing:-.035em;line-height:1.2}
+.site-brand:hover{color:#fff}
+.site-brand .brand-dot{flex:none}
+.site-brand-sub{font-size:12px;font-weight:500;color:#a9c9ff;letter-spacing:-.015em;border-left:1px solid #526987;padding-left:11px}
+#story .story-hero .eyebrow{letter-spacing:.13em}
+#story .story-hero h1{max-width:960px;font-size:clamp(36px,4.8vw,68px);line-height:1.22;letter-spacing:-.062em;word-break:keep-all;overflow-wrap:break-word;text-wrap:balance}
+#story .hero-highlight{color:#b7d8ff}
+#story .story-hero>p{max-width:760px;line-height:1.95;font-size:clamp(15px,1.35vw,18px);word-break:keep-all;overflow-wrap:break-word;text-wrap:pretty}
+#story .story-hero .story-scroll{font-size:12px;line-height:1.7;word-break:keep-all}
+#story .story-heading h2{line-height:1.32;word-break:keep-all;text-wrap:balance}
+#story .story-heading p,#story .story-copy,#story .story-note,#story .story-gloss,#story .method-details p{line-height:1.85;word-break:keep-all;overflow-wrap:break-word;text-wrap:pretty}
+#story .story-card{min-width:0}
+#story .story-card h3{line-height:1.5}
+.top{align-items:center}
+@media(max-width:600px){.site-header{padding:13px 18px}.site-brand{font-size:17px}.site-brand-sub{font-size:11px}#story .story-hero h1{font-size:clamp(31px,8vw,45px)}}
+</style></head><body><header class="site-header"><a class="site-brand" href="#story" aria-label="Looply 분석 리포트 첫 화면으로 이동"><span class="brand-dot"></span><span>Looply</span><span class="site-brand-sub">LCA 데이터 분석</span></a></header><main class="wrap"><div class="top"><span class="pill" id="datasetBadge">평가계수 데이터 로딩 중</span><select id="theme" class="hidden" aria-label="고정 테마"><option value="navy" selected>Carbon Navy</option></select></div><nav class="tabs"><button data-tab="story" class="active">분석 리포트</button><button data-tab="calc">환경영향 계산</button><button data-tab="explore">데이터 인사이트</button><button data-tab="cluster">군집 분석</button><button data-tab="about">프로젝트 안내</button></nav>
 
 <section id="story" aria-label="환경영향 데이터 분석 리포트"><div class="story-nav" aria-label="리포트 키보드 및 버튼 탐색"><button id="storyPrev" type="button" title="이전 장 (↑)">↑ <span>이전</span></button><span class="story-nav-label">REPORT</span><button id="storyNext" type="button" title="다음 장 (↓)">↓ <span>다음</span></button><span class="story-nav-hint">← → 분석 메뉴 이동</span></div>
 <div class="story-hero">
- <div class="eyebrow">LOOPLY / ENVIRONMENTAL DATA STORY</div>
- <h1>환경영향 데이터,<br>쉽게 읽고 깊게 분석하다.</h1>
- <p>환경성적표지 평가계수 398개 항목을 정리하고 분포, 상관관계, 군집 특성을 분석했습니다. 스크롤을 내리며 데이터에서 발견한 특징을 확인해 보세요.</p>
- <div class="story-scroll">↓ 스크롤 또는 화면 오른쪽의 이동 버튼으로 리포트 읽기</div><div class="story-hero-art" role="img" aria-label="원료 생산, 친환경 공장, 물류, 재활용이 순환하는 전과정평가 이미지"></div>
+ <div class="eyebrow">LOOPLY · LCA DATA ANALYTICS</div>
+ <h1>환경영향 데이터를<br><span class="hero-highlight">쉽게 읽고, 깊게 분석하다.</span></h1>
+ <p>환경성적표지 평가계수 398개 항목을 정리하고, 분포와 상관관계 및 군집별 특성을 분석했습니다. 데이터에 담긴 환경영향의 특징을 차트와 해설로 살펴봅니다.</p>
+ <div class="story-scroll">↓ 스크롤하거나 오른쪽 이동 버튼으로 다음 장 보기</div><div class="story-hero-art" role="img" aria-label="원료 생산, 친환경 공장, 물류, 재활용이 순환하는 전과정평가 이미지"></div>
 </div>
 <div class="story-section story-reveal" id="story-data">
  <div class="story-heading"><span class="eyebrow">01 / THE DATA</span><h2>분석의 출발점은<br>데이터의 범위를 아는 것입니다.</h2><p>환경영향계수는 서로 다른 단위와 활동 범위를 포함합니다. 먼저 전체 데이터의 구성과 비교 가능한 표본을 확인했습니다.</p></div>
