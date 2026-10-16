@@ -796,7 +796,7 @@ const local={
 };
 const api=window.LOOPLY_AI_API_URL||'https://looply-ai-api.onrender.com';
 const heading={report:'분석 리포트',calc:'환경영향 계산',explore:'데이터 인사이트',cluster:'군집 분석'};
-for(const topic of Object.keys(local)){
+for(const topic of ['calc','explore','cluster']){
  const section=document.getElementById(topic==='report'?'story':topic);
  if(!section)continue;
  const panel=document.createElement('section');
