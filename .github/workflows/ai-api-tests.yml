@@ -1,0 +1,16 @@
+name: Looply AI API tests
+on:
+  push:
+    branches: [feature/ai-insights]
+  pull_request:
+    branches: [main]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r api/requirements.txt httpx
+      - run: python -m unittest discover -s tests -v
