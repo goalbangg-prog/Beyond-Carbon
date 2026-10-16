@@ -147,5 +147,21 @@ class TestApi(unittest.TestCase):
         self.assertNotIn("9999", json.dumps(response.json(), ensure_ascii=False))
         self.assertAlmostEqual(response.json()["facts"]["total"], 1.85265226)
 
+    def test_statistical_insight_uses_scope_and_reports_missing(self):
+        response = client.post("/api/statistical-insight", json={
+            "stage": "원료 및 에너지 생산", "unit": "kg", "impact": 0
+        })
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["facts"]["total"], body["facts"]["valid"] + body["facts"]["missing"])
+        self.assertGreater(body["facts"]["valid"], 0)
+        self.assertEqual(body["generation"], "statistical")
+
+    def test_statistical_insight_rejects_unknown_scope(self):
+        response = client.post("/api/statistical-insight", json={
+            "stage": "없는 단계", "unit": "kg", "impact": 0
+        })
+        self.assertEqual(response.status_code, 422)
+
 if __name__ == "__main__":
     unittest.main()
