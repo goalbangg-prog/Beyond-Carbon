@@ -47,5 +47,37 @@ class TestApi(unittest.TestCase):
             self.assertEqual(cached.status_code, 200)
             self.assertEqual(mock.chat.completions.create.call_count, 1)
 
+
+    def test_invalid_model_output_returns_502(self):
+        from unittest.mock import MagicMock, patch
+        mock = MagicMock()
+        mock.chat.completions.create.return_value.choices[0].message.content = json.dumps({
+            "finding": "검증되지 않은 999999배 차이가 납니다.",
+            "meaning": "확인되지 않은 주장입니다.",
+            "caution": "주의하세요."
+        }, ensure_ascii=False)
+        with patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}), patch.dict(api_module.AI_CACHE, {}, clear=True), patch("openai.OpenAI", return_value=mock):
+            response = client.post("/api/insights", json={"topic": "cement"})
+            self.assertEqual(response.status_code, 502)
+
+    def test_model_failure_returns_502(self):
+        from unittest.mock import patch
+        with patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}), patch.dict(api_module.AI_CACHE, {}, clear=True), patch("openai.OpenAI", side_effect=RuntimeError("test outage")):
+            response = client.post("/api/insights", json={"topic": "cement"})
+            self.assertEqual(response.status_code, 502)
+            self.assertNotIn("test outage", response.text)
+
+    def test_rate_limit_returns_429(self):
+        from unittest.mock import patch
+        with patch.dict(api_module.AI_CACHE, {}, clear=True), patch.object(api_module, "RATE_LIMIT", 0):
+            response = client.post("/api/insights", json={"topic": "cement"})
+            self.assertEqual(response.status_code, 429)
+
+    def test_budget_limit_returns_503(self):
+        from unittest.mock import patch
+        with patch.dict(api_module.AI_CACHE, {}, clear=True), patch.object(api_module, "GENERATIONS", api_module.MAX_GENERATIONS):
+            response = client.post("/api/insights", json={"topic": "cement"})
+            self.assertEqual(response.status_code, 503)
+
 if __name__ == "__main__":
     unittest.main()
