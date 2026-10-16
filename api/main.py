@@ -288,6 +288,54 @@ def statistical_insight(req: StatisticalInsightRequest, request: Request):
 
 
 # Correlation and clustering: independently computed server-side, never inferred from the chart.
+
+def _explain_verified_result(result, req, request, prefix):
+    """Only meaning is model-editable; statistics, finding and caution remain fixed."""
+    global GENERATIONS
+    cache_key = prefix + ":" + json.dumps(req.model_dump(),ensure_ascii=False,sort_keys=True)
+    with GUARD_LOCK:
+        cached = AI_CACHE.get(cache_key)
+        if cached is not None:
+            return cached
+    if not os.getenv("OPENAI_API_KEY"):
+        return result
+    with GUARD_LOCK:
+        ip = request.client.host if request.client else "unknown"
+        now = time.monotonic()
+        history = REQUEST_TIMES[ip]
+        while history and now-history[0]>3600:
+            history.popleft()
+        if len(history)>=RATE_LIMIT or GENERATIONS>=MAX_GENERATIONS:
+            return result
+        history.append(now)
+        GENERATIONS += 1
+    try:
+        from openai import OpenAI
+        response = OpenAI(api_key=os.environ["OPENAI_API_KEY"],timeout=20).chat.completions.create(
+            model=os.getenv("OPENAI_MODEL","gpt-4o-mini"),
+            messages=[
+                {"role":"system","content":(
+                    "환경 데이터 분석가의 보조 설명자입니다. JSON 객체의 meaning 필드만 작성하세요. "
+                    "제공된 검증 사실을 쉬운 한국어 1~2문장으로 해석하고 다음에 확인할 자료를 제안하세요. "
+                    "새 숫자나 인과관계, 친환경 우열, 제품 전체 LCA 결론을 만들어서는 안 됩니다. "
+                    "상관은 인과가 아니고 군집은 환경 순위가 아닙니다."
+                )},
+                {"role":"user","content":json.dumps({
+                    "finding":result["finding"],"facts":result["facts"],
+                    "default_meaning":result["meaning"],"caution":result["caution"]
+                },ensure_ascii=False)}
+            ],response_format={"type":"json_object"},max_tokens=170,temperature=0.2)
+        parsed = json.loads(response.choices[0].message.content)
+        meaning = parsed.get("meaning") if isinstance(parsed,dict) else None
+        if safe_explanation(meaning):
+            result["meaning"] = meaning
+            result["generation"] = "ai"
+    except Exception as exc:
+        logger.warning("Verified analysis AI fallback: %s",type(exc).__name__)
+    with GUARD_LOCK:
+        AI_CACHE[cache_key] = result
+    return result
+
 class CorrelationInsightRequest(BaseModel):
     stage: str = Field(min_length=1, max_length=100)
     unit: str = Field(min_length=1, max_length=32)
@@ -318,7 +366,7 @@ def _pearson(a, b):
     return numerator / denominator if denominator > 0 else None
 
 @app.post("/api/correlation-insight")
-def correlation_insight(req: CorrelationInsightRequest):
+def correlation_insight(req: CorrelationInsightRequest, request: Request):
     if req.impact_x == req.impact_y:
         raise HTTPException(422, "서로 다른 영향범주를 선택하세요.")
     scope = [r for r in FACTOR_ROWS if r["대분류"] == req.stage and r["단위"] == req.unit]
@@ -343,11 +391,11 @@ def correlation_insight(req: CorrelationInsightRequest):
         finding = (f"{IMPACT_NAMES[req.impact_x]}와 {IMPACT_NAMES[req.impact_y]}의 Spearman 순위상관계수는 "
                    f"{rho:.3f}이며, 두 값이 모두 있는 {count}/{len(scope)}개 항목을 사용했습니다.")
         meaning = f"선택한 항목들에서 두 계수의 순위가 {direction} 경향을 보입니다. 개별 항목과 특이값을 산점도로 함께 살펴보세요."
-    return {"finding":finding,"meaning":meaning,
+    return _explain_verified_result({"finding":finding,"meaning":meaning,
             "caution":"상관관계는 원인이나 제품의 환경적 우열을 증명하지 않습니다. 결측을 제외한 표본과 동일한 기준 단위 안에서만 해석하세요.",
             "facts":{"total":len(scope),"paired":count,"excluded":len(scope)-count,"rho":rho,
                      "impact_x":IMPACT_NAMES[req.impact_x],"impact_y":IMPACT_NAMES[req.impact_y]},
-            "generation":"statistical","source":"data/lca_factors_clean.csv"}
+            "generation":"statistical","source":"data/lca_factors_clean.csv"},req,request,"corr")
 
 class ClusterInsightRequest(BaseModel):
     stage: str = Field(min_length=1, max_length=100)
@@ -356,7 +404,7 @@ class ClusterInsightRequest(BaseModel):
     k: int = Field(ge=2, le=6)
 
 @app.post("/api/cluster-insight")
-def cluster_insight(req: ClusterInsightRequest):
+def cluster_insight(req: ClusterInsightRequest, request: Request):
     if len(set(req.impacts)) != len(req.impacts) or any(j not in range(5) for j in req.impacts):
         raise HTTPException(422, "중복되거나 잘못된 영향범주입니다.")
     scope = [r for r in FACTOR_ROWS if r["대분류"] == req.stage and r["단위"] == req.unit]
@@ -396,10 +444,10 @@ def cluster_insight(req: ClusterInsightRequest):
                f"{req.k}개 군집으로 나눴습니다. 가장 큰 군집은 {biggest['cluster']}번({biggest['size']}개)입니다. "
                + (f"평균 실루엣 점수는 {silhouette:.3f}입니다." if silhouette is not None else "실루엣 점수는 계산할 수 없습니다."))
     meaning = "각 군집에서 두드러지는 영향범주와 대표 항목을 비교해 원자료를 추가 탐색할 수 있습니다. 군집 크기와 분리도를 함께 확인하세요."
-    return {"finding":finding,"meaning":meaning,
+    return _explain_verified_result({"finding":finding,"meaning":meaning,
             "caution":"군집 번호는 환경성 순위가 아닙니다. 로그 변환·표준화와 군집 수 선택에 따라 결과가 달라집니다. 브라우저 차트의 별도 KMeans 구현과 군집 번호가 일치하지 않을 수 있습니다.",
             "facts":{"total":len(scope),"valid":len(valid),"excluded":len(scope)-len(valid),
                      "k":req.k,"silhouette":silhouette,"profiles":profiles,
                      "impacts":[IMPACT_NAMES[j] for j in req.impacts],
                      "method":"scikit-learn KMeans(random_state=42,n_init=10), log10 + StandardScaler"},
-            "generation":"statistical","source":"data/lca_factors_clean.csv"}
+            "generation":"statistical","source":"data/lca_factors_clean.csv"},req,request,"cluster")
