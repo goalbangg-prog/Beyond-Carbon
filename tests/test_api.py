@@ -42,13 +42,14 @@ class TestApi(unittest.TestCase):
             response = client.post("/api/insights", json={"topic": "cement"})
             self.assertEqual(response.status_code, 200)
             self.assertIn("finding", response.json()["insight"])
+            self.assertEqual(response.json()["generation"], "ai")
             self.assertTrue(mock.chat.completions.create.called)
             cached = client.post("/api/insights", json={"topic": "cement"})
             self.assertEqual(cached.status_code, 200)
             self.assertEqual(mock.chat.completions.create.call_count, 1)
 
 
-    def test_invalid_model_output_returns_502(self):
+    def test_invalid_model_output_uses_fallback(self):
         from unittest.mock import MagicMock, patch
         mock = MagicMock()
         mock.chat.completions.create.return_value.choices[0].message.content = json.dumps({
@@ -58,7 +59,9 @@ class TestApi(unittest.TestCase):
         }, ensure_ascii=False)
         with patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}), patch.dict(api_module.AI_CACHE, {}, clear=True), patch("openai.OpenAI", return_value=mock):
             response = client.post("/api/insights", json={"topic": "cement"})
-            self.assertEqual(response.status_code, 502)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json()["generation"], "audited_fallback")
+            self.assertNotIn("999999", json.dumps(response.json(), ensure_ascii=False))
 
     def test_model_failure_returns_502(self):
         from unittest.mock import patch
