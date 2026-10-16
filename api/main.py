@@ -9,6 +9,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from api.insight_policy import audited, safe_explanation
 
 logger = logging.getLogger("looply.ai")
 
@@ -31,7 +32,7 @@ SYSTEM = """당신은 일반인을 위한 환경 데이터 해설자입니다. �
 독자는 환경 분야를 처음 접하는 일반인입니다. 중학생도 이해할 수 있는 쉬운 한국어로 쓰세요.\n어려운 용어는 처음 나올 때 일상적인 말로 풀어 설명하세요. 수치는 필요할 때만 반올림하여 사용하고, 원자료의 단위를 확신할 수 없다면 임의의 단위를 붙이지 마세요.\n발견은 핵심 차이 한 문장, 의미는 생활 속 의미 한두 문장, 주의점은 오해를 막는 한두 문장으로 작성하세요.\n자료에 없는 제조 원인, 재활용 여부, 환경 개선 효과를 추정해서 쓰지 마세요.\n항상 JSON 객체 {"finding":"...","meaning":"...","caution":"..."}만 반환하세요."""
 
 class InsightRequest(BaseModel):
-    topic: str = Field(pattern=r"^(coverage|cement)$")
+    topic: str = Field(pattern=r"^(coverage|cement|report|calc|explore|cluster)$")
     question: str = Field(default="", max_length=240)
 
 @app.get("/health")
@@ -59,8 +60,7 @@ def insights(req: InsightRequest, request: Request):
         GENERATIONS += 1
     if not os.getenv("OPENAI_API_KEY"):
         raise HTTPException(503, "AI 해설 서비스가 아직 설정되지 않았습니다.")
-    facts = {"coverage": {k: STATS[k] for k in ("records", "stage_counts", "impact_names", "valid_counts", "missing_counts", "cautions")},
-             "cement": {"example": STATS["cement_example"], "cautions": STATS["cautions"]}}[req.topic]
+    facts = {"topic": req.topic, "audited": audited(req.topic, STATS)}
     from openai import OpenAI
     try:
         response = OpenAI(api_key=os.environ["OPENAI_API_KEY"], timeout=20.0).chat.completions.create(
@@ -70,19 +70,15 @@ def insights(req: InsightRequest, request: Request):
         parsed = json.loads(response.choices[0].message.content)
         if not isinstance(parsed, dict) or not all(isinstance(parsed.get(k),str) and 0 < len(parsed[k]) <= 600 for k in ("finding","meaning","caution")):
             raise ValueError("invalid AI response")
-        # Guardrail: reject fabricated numbers. Cement insight may use only source facts
-        # (or their rounded equivalents); coverage may use only source counts.
-        import re
-        text_blob = " ".join(parsed[k] for k in ("finding", "meaning", "caution"))
-        numbers = [float(x) for x in re.findall(r"(?<![\w.])\d+(?:\.\d+)?", text_blob)]
-        if req.topic == "cement":
-            permitted = (1, 0.92632613, 0.503655563, 45.63, 45.64, 45.6, 45.7, 45, 46, 0.9, 0.92, 0.93, 0.926, 0.9263, 0.50, 0.5, 0.503, 0.504, 0.5037, 0.50366)
-        else:
-            permitted = tuple([398, 198, 10, 32, 113, 45, 223, 210, 190, 200, 175, 188, 208, 198, 0, 1, 2, 3, 4, 5, 50] + list(STATS["stage_counts"].values()) + STATS["valid_counts"] + STATS["missing_counts"])
-        fallback_used = any(not any(abs(n - p) <= 0.011 for p in permitted) for n in numbers)
-        if fallback_used:
-            parsed = {"finding": "자료에 근거한 계수 차이가 확인됩니다.", "meaning": "평가계수는 정해진 기준 단위에서 해석해야 합니다.", "caution": "개별 계수만으로 제품 전체의 환경성을 판단할 수 없습니다."}
-        result = {"topic":req.topic,"insight":{k:parsed[k] for k in ("finding","meaning","caution")},"source":"data/ai_facts.json", "generation":"audited_fallback" if fallback_used else "ai"}
+        # Finding and caution are always generated from audited source facts.
+        # AI may only provide a short, number-free explanation of their meaning.
+        base = audited(req.topic, STATS)
+        explanation = parsed["meaning"]
+        accepted = safe_explanation(explanation)
+        result = {"topic": req.topic,
+                  "insight": {**base, "meaning": explanation if accepted else base["meaning"]},
+                  "source": "data/ai_facts.json",
+                  "generation": "ai" if accepted else "audited_fallback"}
         with GUARD_LOCK:
             AI_CACHE[req.topic] = result
         return result
