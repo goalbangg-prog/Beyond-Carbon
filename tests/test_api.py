@@ -63,6 +63,41 @@ class TestApi(unittest.TestCase):
             self.assertEqual(response.json()["generation"], "audited_fallback")
             self.assertNotIn("999999", json.dumps(response.json(), ensure_ascii=False))
 
+    def test_all_four_tabs_have_audited_explanations(self):
+        from api.insight_policy import audited
+        for topic in ("report", "calc", "explore", "cluster"):
+            result = audited(topic, facts)
+            self.assertTrue(all(result[k] for k in ("finding", "meaning", "caution")))
+
+    def test_regression_misleading_cement_claim(self):
+        from unittest.mock import MagicMock, patch
+        mock = MagicMock()
+        mock.chat.completions.create.return_value.choices[0].message.content = json.dumps({
+            "finding": "1종 포틀랜드 시멘트는 고로 슬래그 시멘트보다 약 45.63% 더 많은 환경 영향을 미칩니다.",
+            "meaning": "고로 슬래그 시멘트가 환경에 덜 해로운 선택입니다.",
+            "caution": "비교에 주의하세요."
+        }, ensure_ascii=False)
+        with patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}), patch.dict(api_module.AI_CACHE, {}, clear=True), patch("openai.OpenAI", return_value=mock):
+            response = client.post("/api/insights", json={"topic": "cement"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["generation"], "audited_fallback")
+        self.assertNotIn("더 많은 환경 영향", json.dumps(response.json(), ensure_ascii=False))
+        self.assertIn("평가계수", response.json()["insight"]["finding"])
+
+    def test_regression_misleading_coverage_claim(self):
+        from unittest.mock import MagicMock, patch
+        mock = MagicMock()
+        mock.chat.completions.create.return_value.choices[0].message.content = json.dumps({
+            "finding": "수송은 10개입니다.",
+            "meaning": "수송 분야는 데이터가 부족하다는 것을 보여줍니다.",
+            "caution": "결측은 0이 아닙니다."
+        }, ensure_ascii=False)
+        with patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}), patch.dict(api_module.AI_CACHE, {}, clear=True), patch("openai.OpenAI", return_value=mock):
+            response = client.post("/api/insights", json={"topic": "coverage"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["generation"], "audited_fallback")
+        self.assertNotIn("데이터가 부족하다는", json.dumps(response.json(), ensure_ascii=False))
+
     def test_model_failure_returns_502(self):
         from unittest.mock import patch
         with patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}), patch.dict(api_module.AI_CACHE, {}, clear=True), patch("openai.OpenAI", side_effect=RuntimeError("test outage")):
