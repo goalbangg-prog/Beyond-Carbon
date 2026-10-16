@@ -83,8 +83,8 @@ function describe(key){
   if(!res.length)return '항목을 추가하고 사용량을 입력하면 현재 계산 조건에 맞춰 설명이 표시됩니다.';
   const valid=res.filter(x=>Number.isFinite(x.v[j]));
   const total=valid.reduce((sum,x)=>sum+x.v[j],0);
-  const biggest=[...valid].sort((a,b)=>b.v[j]-a.v[j])[0];
-  return '현재 '+n(res.length)+'개 항목을 계산했습니다. '+impacts[j]+' 범주에서 유효한 항목은 '+n(valid.length)+'개, 계산된 부분 합계는 '+n(total)+'입니다. '+(biggest?'가장 큰 기여 항목은 '+biggest.b.row.name+'입니다. ':'')+'이 값은 선택한 활동자료와 계수의 부분 계산이며 제품 전체 LCA 결과가 아닙니다.';
+  const ranked=[...valid].sort((a,b)=>b.v[j]-a.v[j]);const biggest=ranked[0];const positive=valid.reduce((a,x)=>a+Math.max(0,x.v[j]),0);const share=biggest&&positive>0?100*biggest.v[j]/positive:null;
+  return '현재 '+n(res.length)+'개 항목을 계산했습니다. '+impacts[j]+' 범주에서 유효한 항목은 '+n(valid.length)+'개, 계산된 부분 합계는 '+n(total)+'입니다. '+(biggest?'가장 큰 기여 항목은 '+biggest.b.row.name+(share!=null?'(양수 기여량의 '+n(share)+'%)':'')+'입니다. ':'')+(ranked.length>1?'다음 기여 항목은 '+ranked[1].b.row.name+'입니다. ':'')+'기여도가 큰 항목부터 검토하되 기능적 동등성을 확인해야 합니다. 제품 전체 LCA 결과는 아닙니다.';
  }
  if(key==='explore'){
   const stage=$('exStage')?.value,unit=$('exUnit')?.value,mode=$('exMode')?.value;
