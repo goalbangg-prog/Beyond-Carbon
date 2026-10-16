@@ -766,7 +766,7 @@ const aiCopy={
  coverage:{finding:'398개 평가계수 중 원료 및 에너지 생산 단계에 198개가 포함되어 있어요. 자료의 절반 가까이가 이 단계에 해당합니다.',meaning:'이 자료는 모든 환경영향을 똑같이 다루는 목록이 아니에요. 어떤 단계에 데이터가 많이 모여 있는지부터 확인하면 차트를 더 정확하게 읽을 수 있어요.',caution:'자료가 많다고 환경영향이 크다는 뜻은 아니에요. 서로 다른 기준 단위의 계수를 직접 비교해서도 안 됩니다.'},
  cement:{finding:'같은 1kg 기준에서 1종 포틀랜드 시멘트의 탄소발자국 계수는 약 0.926, 고로 슬래그 시멘트는 약 0.504로 나타났어요.',meaning:'이 자료에서 고로 슬래그 시멘트의 계수는 약 46% 낮아요. 같은 기준 단위에서도 재료 종류에 따라 결과가 달라질 수 있어요.',caution:'이 수치만으로 어떤 시멘트가 모든 용도에서 더 친환경적이라고 결론 낼 수 없어요. 성능과 실제 사용량도 고려해야 합니다.'}
 };
-const aiEndpoint=window.LOOPLY_AI_API_URL||'';
+const aiEndpoint=window.LOOPLY_AI_API_URL||'https://looply-ai-api.onrender.com';
 async function showAi(topic){
  const copy=aiCopy[topic];if(!copy)return;
  const set=insight=>{for(const [k,id] of [['finding','aiFinding'],['meaning','aiMeaning'],['caution','aiCaution']])document.getElementById(id).textContent=insight[k];};
