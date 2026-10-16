@@ -478,58 +478,74 @@ function enhancedExplore(){let r=data.filter(x=>x.stage===$('exStage').value&&x.
  else if(mode==='corr'){let z=impacts.map((_,i)=>impacts.map((_,h)=>{let a=r.filter(x=>x.v[i]!=null&&x.v[h]!=null);return corr(a.map(x=>x.v[i]),a.map(x=>x.v[h]))}));chart('plotArea',[{type:'heatmap',x:impacts,y:impacts,z,zmin:-1,zmax:1,colorscale:'RdBu',reversescale:true,text:z.map(row=>row.map(v=>v==null?'—':v.toFixed(2))),texttemplate:'%{text}',hovertemplate:'%{y} × %{x}<br>Spearman ρ: %{z:.3f}<extra></extra>'}],themeLayout(440,{margin:{l:85,r:25,t:25,b:75},xaxis:{side:'bottom'},yaxis:{autorange:'reversed'}}));$('plotNote').textContent+=' · 각 쌍의 유효 표본만 사용'}
 }
 function enhancedCalc(){let res=calculations(),j=Number($('impact').value||0),valid=res.filter(x=>x.v[j]!=null),names=valid.map(x=>x.b.row.name),values=valid.map(x=>x.v[j]);if(!res.length){for(let id of ['contribPlot','contribHeat','stageDonut'])$(id).innerHTML='';return}chart('contribPlot',[{type:'bar',orientation:'h',x:values,y:names,marker:{color:COLORS[0]},hovertemplate:'%{y}<br>%{x:.4g}<extra></extra>'}],themeLayout(Math.max(300,names.length*40+120),{title:{text:`항목별 ${impacts[j]} 기여량`,font:{size:15}},margin:{l:180,r:25,t:65,b:55},xaxis:{title:symbols[j]},yaxis:{automargin:true}}));let z=res.map(x=>impacts.map((_,i)=>{let total=res.reduce((s,y)=>s+(y.v[i]??0),0);return x.v[i]==null||total<=0?null:100*x.v[i]/total}));chart('contribHeat',[{type:'heatmap',x:impacts,y:res.map(x=>x.b.row.name),z,zmin:0,zmax:100,colorscale:'Blues',text:z.map(row=>row.map(v=>v==null?'—':v.toFixed(0)+'%')),texttemplate:'%{text}',hovertemplate:'%{y}<br>%{x}: %{z:.1f}%<extra></extra>'}],themeLayout(Math.max(310,res.length*40+125),{title:{text:'영향범주별 항목 기여율 (%)',font:{size:15}},margin:{l:170,r:25,t:65,b:65}}));let groups={};for(let x of valid){groups[x.b.row.stage]=(groups[x.b.row.stage]||0)+x.v[j]}let positive=Object.entries(groups).filter(([,v])=>v>0);if(positive.length){chart('stageDonut',[{type:'pie',hole:.56,labels:positive.map(x=>x[0]),values:positive.map(x=>x[1]),marker:{colors:COLORS},textinfo:'percent',hovertemplate:'%{label}<br>%{value:.4g}<br>%{percent}<extra></extra>'}],themeLayout(370,{title:{text:`대분류별 ${impacts[j]} 기여율 (양수만)`,font:{size:15}},margin:{l:20,r:20,t:65,b:25},showlegend:true}))}else $('stageDonut').innerHTML='<p class="muted">양수인 대분류 합계가 없어 도넛 그래프를 표시하지 않습니다.</p>'}
-function enhancedCluster(){let sel=[...document.querySelectorAll('[data-cl]')].filter(x=>x.checked).map(x=>+x.value);if(sel.length<2)return alert('영향 항목을 2개 이상 선택하세요.');let scope=$('clusterScope').value;if(!scope)return $('clusterResult').textContent='군집 분석 가능한 범위가 없습니다.';let [stage,unit]=scope.split('|||'),a=data.filter(r=>r.stage===stage&&r.unit===unit&&sel.every(j=>r.v[j]>0)),k=+$('clusterK').value;if(a.length<k*4)return $('clusterResult').textContent='데이터가 부족합니다.';let logs=a.map(r=>sel.map(j=>Math.log10(r.v[j]))),means=sel.map((_,j)=>logs.reduce((s,x)=>s+x[j],0)/logs.length),std=sel.map((_,j)=>Math.sqrt(logs.reduce((s,x)=>s+(x[j]-means[j])**2,0)/logs.length)||1),X=logs.map(x=>x.map((v,j)=>(v-means[j])/std[j])),result=kmeans(X,k),order=result.centers.map((c,i)=>({i,m:c.reduce((s,v)=>s+v,0)/c.length})).sort((a,b)=>a.m-b.m),ranks=Object.fromEntries(order.map((x,i)=>[x.i,i+1]));let html='<h3>군집별 특성 요약</h3><p class="cluster-explain">군집 번호는 원료의 환경적 우수성 순위가 아닙니다. 선택한 환경영향범주의 계수 패턴이 유사한 항목을 묶은 식별 번호입니다. 아래의 높음·보통·낮음은 로그 변환 후 표준화한 값의 상대적 특성을 나타냅니다.</p><div class="grid three">';for(let i=1;i<=order.length;i++){let idx=order[i-1].i,members=a.filter((_,j)=>result.lab[j]===idx);html+=`<div class="metric"><strong>${i}번 군집 · ${members.length}개</strong><p>${sel.map((j,z)=>`${impacts[j]}: ${result.centers[idx][z]>.5?'높음':result.centers[idx][z]<-.5?'낮음':'보통'}`).join('<br>')}</p><small>${members.slice(0,3).map(r=>esc(r.name)).join(', ')}</small></div>`}html+='</div><div class="cluster-interpret"><h3>군집별 상대적 환경영향 특성</h3><p>전체 분석 표본의 로그 변환 평균을 <strong>0</strong>으로 두었습니다. 각 군집 중심값의 표준화 점수가 양수이면 해당 영향범주의 계수가 전체 평균보다 상대적으로 높은 편이고, 음수이면 낮은 편입니다. 이 수치는 실제 배출량의 증감률이나 환경성능 등급이 아닙니다.</p><div id="clusterDeviation" class="viz"></div><div class="cluster-representatives"><h3>군집별 대표 원료·에너지 항목</h3><p>각 군집 중심점과의 표준화 공간상 거리가 가장 가까운 항목 3개를 예시로 제시합니다. 대표 항목은 원료의 환경적 우수성이나 산업적 중요도 순위가 아닙니다.</p><div class="cluster-representative-grid">'+order.map((o,i)=>{const center=result.centers[o.i];const examples=a.map((r,j)=>({r,j,d:Math.sqrt(X[j].reduce((sum,v,h)=>sum+(v-center[h])**2,0))})).filter(x=>result.lab[x.j]===o.i).sort((x,y)=>x.d-y.d).slice(0,3);const most=sel.map((j,z)=>({label:impacts[j],value:center[z]})).sort((x,y)=>y.value-x.value)[0];const least=sel.map((j,z)=>({label:impacts[j],value:center[z]})).sort((x,y)=>x.value-y.value)[0];return '<div class="cluster-representative"><span class="cluster-rep-id">군집 '+(i+1)+'</span><strong>'+examples.map(x=>esc(x.r.name)).join(' · ')+'</strong><p>상대적으로 높은 영향범주: <b>'+esc(most.label)+'</b> ('+most.value.toFixed(2)+')<br>상대적으로 낮은 영향범주: <b>'+esc(least.label)+'</b> ('+least.value.toFixed(2)+')</p></div>'}).join('')+'</div></div></div><div id="clusterProfile" class="viz"></div><div id="clusterScatter" class="viz"></div><p class="muted">군집은 탐색적 통계 결과이며 공식 LCA 분류가 아닙니다. 브라우저 구현은 scikit-learn의 KMeans++ 초기화와 달라 결과가 일치하지 않을 수 있습니다.</p><details class="cluster-details"><summary>군집별 원료·에너지 항목 상세 결과 <span class="detail-count">('+a.length+'개 항목)</span></summary><p class="cluster-explain">각 행은 하나의 원료·에너지 항목이며, 군집 번호는 해당 항목이 배정된 집단을 뜻합니다. 계수는 원자료의 기준 단위 <strong>'+esc(unit)+'</strong>당 값입니다. 서로 다른 영향범주 간 수치를 직접 비교하거나 군집 번호를 환경성능 순위로 해석하지 마세요.</p><div class="scroll"><table><thead><tr><th>군집</th><th>원료·에너지 항목</th>'+sel.map(j=>`<th>${impacts[j]}<small>${symbols[j]}/${esc(unit)}</small></th>`).join('')+'</tr></thead><tbody>'+a.map((r,i)=>`<tr><td><span class="cluster-pill">${ranks[result.lab[i]]}</span></td><td>${esc(r.name)}</td>${sel.map(j=>`<td class="num">${fmt(r.v[j])}</td>`).join('')}</tr>`).join('')+'</tbody></table></div></details>';$('clusterResult').innerHTML=html;let profile=order.map(o=>result.centers[o.i]);chart('clusterDeviation',order.map((o,i)=>({type:'bar',name:'군집 '+(i+1),x:sel.map(j=>impacts[j]),y:result.centers[o.i],hovertemplate:'%{fullData.name}<br>%{x}<br>표준화 중심값: %{y:+.2f}<extra></extra>'})),themeLayout(430,{title:{text:'전체 평균(0) 대비 군집별 중심값 · 표준화 점수',font:{size:15}},barmode:'group',xaxis:{title:'환경영향범주',automargin:true},yaxis:{title:'표준화 중심값 (z-score)',zeroline:true,zerolinewidth:2,zerolinecolor:'#415f83'},legend:{orientation:'h',y:-.28},margin:{l:85,r:25,t:70,b:110}}));chart('clusterProfile',[{type:'heatmap',x:sel.map(j=>impacts[j]),y:order.map((_,i)=>`${i+1}번 군집`),z:profile,zmin:-2,zmax:2,colorscale:'RdBu',reversescale:true,text:profile.map(row=>row.map(v=>v.toFixed(2))),texttemplate:'%{text}',hovertemplate:'%{y}<br>%{x}: 표준화 중심값 %{z:.2f}<extra></extra>'}],themeLayout(Math.max(300,k*55+120),{title:{text:'군집 프로필 · log10 표준화 중심값',font:{size:15}},margin:{l:110,r:20,t:70,b:60}}));let [u,v]=sel.slice(0,2);chart('clusterScatter',order.map((o,i)=>{let d=a.filter((_,j)=>result.lab[j]===o.i);return {type:'scattergl',mode:'markers',name:`${i+1}번 군집`,x:d.map(x=>x.v[u]),y:d.map(x=>x.v[v]),text:d.map(x=>x.name),marker:{size:10,color:COLORS[i],opacity:.78},hovertemplate:'%{text}<br>x=%{x:.4g}<br>y=%{y:.4g}<extra>%{fullData.name}</extra>'}}),themeLayout(480,{title:{text:'군집별 원료 분포',font:{size:15}},xaxis:{type:'log',title:`${impacts[u]} (${symbols[u]} / ${unit})`},yaxis:{type:'log',title:`${impacts[v]} (${symbols[v]} / ${unit})`},legend:{orientation:'h',y:-.25},margin:{l:80,r:25,t:70,b:100}}))}
-
-/* V2.1: visible axis titles and a reproducible, data-rich first view. */
-const baseChart=chart;
-chart=function(id,traces,layout){
-  const l={...layout,margin:{l:95,r:45,t:layout?.margin?.t??60,b:105,...(layout?.margin||{})}};
-  for(const key of ['xaxis','yaxis']){
-    if(l[key]){
-      const a={...l[key],automargin:true};
-      if(typeof a.title==='string')a.title={text:a.title,font:{size:13},standoff:18};
-      else if(a.title&&typeof a.title==='object')a.title={font:{size:13},standoff:18,...a.title};
-      a.tickfont={size:11,...a.tickfont};
-      l[key]=a;
-    }
-  }
-  if(l.xaxis?.title?.text)l.margin.b=Math.max(l.margin.b,105);
-  if(l.yaxis?.title?.text)l.margin.l=Math.max(l.margin.l,105);
-  baseChart(id,traces,l);
-};
-function recommendClusters(){
- const el=$('recommendResult'),selected=[...document.querySelectorAll('[data-cl]')].filter(x=>x.checked).map(x=>+x.value);
- const scope=$('clusterScope').value;
- if(selected.length<2||!scope){el.textContent='영향 항목 2개 이상과 분석 범위를 선택하세요.';return}
- const [stage,unit]=scope.split('|||');
- const rows=data.filter(r=>r.stage===stage&&r.unit===unit&&selected.every(j=>r.v[j]>0));
- if(rows.length<12){el.textContent='유효한 데이터가 12개 이상 필요합니다.';return}
- const logs=rows.map(r=>selected.map(j=>Math.log10(r.v[j])));
- const means=selected.map((_,j)=>logs.reduce((t,x)=>t+x[j],0)/logs.length);
- const std=selected.map((_,j)=>Math.sqrt(logs.reduce((t,x)=>t+(x[j]-means[j])**2,0)/logs.length)||1);
- const all=logs.map(x=>x.map((v,j)=>(v-means[j])/std[j]));
- // Stable systematic sampling keeps browser-side silhouette computations responsive.
- const X=all.length>180?Array.from({length:180},(_,i)=>all[Math.floor(i*(all.length-1)/179)]):all;
- const dist=(a,b)=>Math.sqrt(a.reduce((t,v,j)=>t+(v-b[j])**2,0));
- const scores=[];
- for(let k=2;k<=Math.min(6,Math.floor(X.length/4));k++){
-   const {lab}=kmeans(X,k),groups=Array.from({length:k},()=>[]);
-   lab.forEach((g,i)=>groups[g]?.push(i));
-   if(groups.some(g=>g.length<2))continue;
-   let sum=0;
-   for(let i=0;i<X.length;i++){
-     const own=groups[lab[i]];
-     const a=own.reduce((t,z)=>t+(z===i?0:dist(X[i],X[z])),0)/(own.length-1);
-     let b=Infinity;
-     groups.forEach((g,j)=>{if(j!==lab[i])b=Math.min(b,g.reduce((t,z)=>t+dist(X[i],X[z]),0)/g.length)});
-     sum+=(b-a)/Math.max(a,b,1e-12);
-   }
-   scores.push({k,score:sum/X.length});
+let clusterRunVersion=0;
+function clusterPayload(){
+ const impactsSelected=[...document.querySelectorAll('[data-cl]:checked')].map(x=>Number(x.value));
+ const parts=($('clusterScope').value||'').split('|||');
+ if(parts.length!==2||impactsSelected.length<2)return null;
+ return {stage:parts[0],unit:parts[1],impacts:impactsSelected,k:Number($('clusterK').value)};
+}
+async function requestCluster(payload){
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),45000);
+ try{
+  const base=(window.LOOPLY_AI_API_URL||'https://looply-ai-api.onrender.com').replace(/\\/$/,'');
+  const response=await fetch(base+'/api/cluster-insight',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:controller.signal});
+  if(!response.ok){let detail='HTTP '+response.status;try{const error=await response.json();detail=error.detail||detail}catch(_){}throw Error(detail)}
+  return await response.json();
+ }finally{clearTimeout(timer)}
+}
+function renderPythonClusters(result,payload){
+ const root=$('clusterResult'),facts=result.facts;
+ root.replaceChildren();
+ const heading=document.createElement('h3');heading.textContent='Python scikit-learn 군집 분석';root.append(heading);
+ const note=document.createElement('p');note.className='muted';
+ note.textContent='유효 '+facts.valid+'/'+facts.total+'개 · 제외 '+facts.excluded+'개 · k='+facts.k+' · 실루엣 '+(facts.silhouette==null?'계산 불가':facts.silhouette.toFixed(3));
+ root.append(note);
+ const plot=document.createElement('div');plot.className='viz';root.append(plot);
+ if(window.Plotly){
+  Plotly.newPlot(plot,[{type:'bar',x:facts.profiles.map(p=>p.cluster+'번 군집'),y:facts.profiles.map(p=>p.size),marker:{color:'#247c91'},text:facts.profiles.map(p=>p.size+'개'),textposition:'outside'}],{height:320,margin:{l:65,r:20,t:20,b:65},xaxis:{title:'군집'},yaxis:{title:'항목 수',rangemode:'tozero'},paper_bgcolor:'#fff',plot_bgcolor:'#fff'},{responsive:true,displaylogo:false});
  }
- if(!scores.length){el.textContent='유효한 군집 수를 평가할 수 없습니다.';return}
+ const grid=document.createElement('div');grid.className='grid three';
+ for(const p of facts.profiles){
+  const card=document.createElement('div');card.className='metric';
+  const title=document.createElement('strong');title.textContent=p.cluster+'번 군집 · '+p.size+'개';card.append(title);
+  const detail=document.createElement('p');detail.textContent=p.distinguishing_impact+' '+p.direction+' (표준화 중심 '+p.standardized_center+')';card.append(detail);
+  const example=document.createElement('small');example.textContent=p.examples.join(', ');card.append(example);grid.append(card);
+ }
+ root.append(grid);
+ const scroll=document.createElement('div');scroll.className='scroll';
+ const table=document.createElement('table'),thead=document.createElement('thead'),headrow=document.createElement('tr');
+ for(const name of ['군집','항목',...payload.impacts.map(j=>impacts[j])]){const th=document.createElement('th');th.textContent=name;headrow.append(th)}thead.append(headrow);table.append(thead);
+ const tbody=document.createElement('tbody');
+ for(const a of facts.assignments||[]){const tr=document.createElement('tr');for(const val of [a.cluster,a.name,...a.values.map(v=>Number(v).toPrecision(5))]){const td=document.createElement('td');td.textContent=String(val);tr.append(td)}tbody.append(tr)}
+ table.append(tbody);scroll.append(table);root.append(scroll);
+ const warning=document.createElement('p');warning.className='muted';warning.textContent=result.caution;root.append(warning);
+}
+async function enhancedCluster(){
+ const payload=clusterPayload(),root=$('clusterResult');
+ if(!payload){root.textContent='영향범주 두 개 이상과 분석 범위를 선택하세요.';return}
+ const version=++clusterRunVersion;root.textContent='Python 군집 분석을 실행하는 중입니다…';
+ try{
+  const result=await requestCluster(payload);
+  if(version!==clusterRunVersion||JSON.stringify(payload)!==JSON.stringify(clusterPayload()))return;
+  renderPythonClusters(result,payload);
+  window.dispatchEvent(new CustomEvent('looply:cluster-result',{detail:{result,payload}}));
+ }catch(error){if(version===clusterRunVersion)root.textContent='군집 분석을 완료하지 못했습니다: '+error.message}
+}
+async function recommendClusters(){
+ const output=$('recommendResult'),original=clusterPayload();
+ if(!original){output.textContent='분석 범위와 영향범주를 선택하세요.';return}
+ output.textContent='Python 실루엣 점수로 k=2~6을 비교하는 중…';
+ const version=++clusterRunVersion;
+ const scores=[];
+ for(let k=2;k<=6;k++){
+  try{const result=await requestCluster({...original,k});if(version!==clusterRunVersion)return;if(result.facts.silhouette!=null)scores.push({k,score:result.facts.silhouette})}
+  catch(error){if(version!==clusterRunVersion)return}
+ }
+ if(!scores.length){output.textContent='추천할 수 없습니다. 서버 연결과 유효 표본을 확인하세요.';return}
  scores.sort((a,b)=>b.score-a.score);
- const best=scores[0];$('clusterK').value=String(best.k);
- el.textContent='추천 '+best.k+'개 · 평균 실루엣 계수 '+best.score.toFixed(3)+' (최대 '+X.length+'개 표본 기준). 아래 분석 실행 버튼을 눌러 결과를 확인하세요.';
+ $('clusterK').value=String(scores[0].k);
+ output.textContent='Python 실루엣 최고 k='+scores[0].k+' · 점수 '+scores[0].score.toFixed(3)+' · 분석 실행을 누르면 동일한 Python 엔진으로 결과를 표시합니다.';
 }
 $('recommendK').addEventListener('click',recommendClusters);
 const priorScopes=clusterScopes;
