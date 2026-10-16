@@ -357,6 +357,24 @@ button:focus-visible,a:focus-visible{outline:3px solid #71a8f4!important;outline
 }
 @media(max-width:600px){nav.tabs .site-brand{font-size:14px!important}nav.tabs button{padding:9px 10px!important}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+/* V4.5 — Korean prose: balanced measure and natural word boundaries */
+#story .story-heading{max-width:100%!important}
+#story .story-heading>p{max-width:64ch!important;margin-left:0!important;margin-right:auto!important}
+#story .story-heading>p,#story .story-copy,#story .story-note,#story .story-gloss,#story .story-card p,#story .method-details p,.panel p,.muted,footer p{
+ word-break:keep-all!important;overflow-wrap:normal!important;line-break:strict!important;
+ text-wrap:pretty;letter-spacing:-.012em!important;line-height:1.85!important;
+}
+#story .story-heading h2,#story .story-hero h1,#story .story-card h3,.panel h2,.panel h3{
+ word-break:keep-all!important;overflow-wrap:normal!important;text-wrap:balance;line-height:1.4!important;
+}
+#story .story-copy{max-width:66ch!important}
+#story .story-card p{max-width:58ch}
+#story .story-heading>p{font-size:clamp(15px,1.2vw,17px)!important}
+@media(max-width:700px){
+ #story .story-heading>p,#story .story-copy,#story .story-note,#story .story-gloss,#story .story-card p,.panel p{overflow-wrap:break-word!important}
+ #story .story-heading>p{max-width:100%!important}
+}
 </style></head><body><main class="wrap"><div class="top"><span class="pill" id="datasetBadge">평가계수 데이터 로딩 중</span><select id="theme" class="hidden" aria-label="고정 테마"><option value="navy" selected>Carbon Navy</option></select></div><nav class="tabs" aria-label="주요 분석 메뉴"><a class="site-brand" href="#story" aria-label="Looply 분석 리포트 첫 화면으로 이동"><span class="brand-dot"></span><span>Looply</span><span class="site-brand-sub">LCA 데이터 분석</span></a><div class="sidebar-divider" aria-hidden="true"></div><button data-tab="story" class="active">분석 리포트</button><button data-tab="calc">환경영향 계산</button><button data-tab="explore">데이터 인사이트</button><button data-tab="cluster">군집 분석</button></nav>
 
 <section id="story" aria-label="환경영향 데이터 분석 리포트"><div class="story-nav" aria-label="리포트 키보드 및 버튼 탐색"><button id="storyPrev" type="button" title="이전 장 (↑)">↑ <span>이전</span></button><span class="story-nav-label">REPORT</span><button id="storyNext" type="button" title="다음 장 (↓)">↓ <span>다음</span></button><span class="story-nav-hint">← → 분석 메뉴 이동</span></div>
@@ -388,7 +406,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #71a8f4!important;outline
 </div>
 <div class="story-divider"></div>
 <div class="story-section story-reveal" id="story-try">
- <div class="story-heading"><span class="eyebrow">05 / EXPLORE YOURSELF</span><h2>이제 직접 분석해 보세요.</h2><p>여기까지는 데이터를 읽는 리포트였습니다. 이제 원료와 사용량을 바꾸거나 분석 범위를 선택해 결과가 어떻게 달라지는지 확인할 수 있습니다.</p></div>
+ <div class="story-heading"><span class="eyebrow">05 / EXPLORE YOURSELF</span><h2>이제 직접 분석해 보세요.</h2><p>지금까지 환경영향 데이터를 살펴봤습니다. 이제 원료와 사용량을 바꾸거나 분석 범위를 선택해 보세요. 조건에 따라 결과가 어떻게 달라지는지 직접 확인할 수 있습니다.</p></div>
  <div class="story-method"><div class="story-card"><span class="eyebrow">TOOL 01</span><b>환경영향 계산</b><p>원료·에너지 항목을 선택하고 사용량에 따른 5개 환경영향범주의 부분 산정 결과를 확인합니다.</p><div class="story-actions"><button type="button" data-go="calc">계산기 열기 →</button></div></div><div class="story-card"><span class="eyebrow">TOOL 02</span><b>데이터 인사이트</b><p>히스토그램, 박스플롯, 산점도, 순위상관관계 등 탐색적 시각화를 직접 조작합니다.</p><div class="story-actions"><button type="button" data-go="explore">데이터 탐색 →</button></div></div><div class="story-card"><span class="eyebrow">TOOL 03</span><b>군집 분석</b><p>군집 수 추천, 군집 프로필과 개별 항목의 분포를 비교합니다.</p><div class="story-actions"><button type="button" data-go="cluster">군집 분석 →</button></div></div></div>
 </div>
 <div class="story-divider"></div>
