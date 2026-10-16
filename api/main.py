@@ -128,12 +128,22 @@ def calculation_facts(req: CalculationInsightRequest):
     if not math.isfinite(total):
         raise HTTPException(422, "계산 결과가 허용 범위를 벗어났습니다.")
     biggest = max(contributions, key=lambda x: x["value"]) if contributions else None
-    finding = (f"{IMPACT_NAMES[req.impact]} 부분 계산: 유효한 항목 {len(contributions)}개, "
-               f"결측 항목 {len(missing)}개, 합계 {total:.6g} {IMPACT_SYMBOLS[req.impact]}."
-               + (f" 가장 큰 기여 항목은 {biggest['name']}입니다." if biggest else " 계산 가능한 계수가 없습니다."))
+    positive_total = sum(x["value"] for x in contributions if x["value"] > 0)
+    ranked = sorted(contributions, key=lambda x: x["value"], reverse=True)
+    finding = (f"{IMPACT_NAMES[req.impact]} 부분 합계는 {total:.6g} {IMPACT_SYMBOLS[req.impact]}이며 "
+               f"유효 항목 {len(contributions)}개, 결측 항목 {len(missing)}개입니다.")
+    if biggest and positive_total > 0:
+        share = biggest["value"] / positive_total * 100
+        finding += f" 가장 큰 기여 항목은 {biggest['name']}이며 양수 기여량 합계의 {share:.1f}%를 차지합니다."
+    if len(ranked) >= 2 and ranked[0]["value"] > 0:
+        gap = ranked[0]["value"] - ranked[1]["value"]
+        finding += (f" 두 번째 항목 {ranked[1]['name']}과의 기여량 차이는 "
+                    f"{gap:.6g} {IMPACT_SYMBOLS[req.impact]}입니다.")
+    if missing:
+        finding += " 결측 항목은 합계에서 제외되므로 실제 전체 영향과 다를 수 있습니다."
     return {
         "finding": finding,
-        "meaning": "선택한 항목의 기준 단위로 환산된 사용량과 평가계수를 곱한 부분 결과입니다.",
+        "meaning": ("기여도가 큰 항목부터 입력량이나 대체 가능성을 검토할 우선순위를 정할 수 있습니다. " if biggest else "해당 범주에 유효한 계수가 없어 비교할 수 없습니다. ") + "다만 항목 간 기능적 동등성과 시스템 경계를 먼저 확인해야 합니다.",
         "caution": "결측값은 0이 아닙니다. 이 결과는 제품 전체의 LCA나 공식 인증 결과가 아닙니다.",
         "total": total,
         "valid_count": len(contributions),
