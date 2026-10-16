@@ -781,7 +781,7 @@ async function showAi(topic){
   if(!res.ok)throw Error('AI server error');
   const data=await res.json();
   if(!data.insight||!['finding','meaning','caution'].every(k=>typeof data.insight[k]==='string'))throw Error('Invalid response');
-  set(data.insight);status.textContent='AI 해설 · 검증된 통계값 기반 · 생성형 AI 응답';
+  set(data.insight);status.textContent=data.generation==='ai'?'AI 쉬운 설명 · 핵심 사실은 데이터에서 검증':'검증된 기본 해설 · AI 설명은 안전 검증으로 대체';
  }catch(err){set(copy);status.textContent='AI 연결이 원활하지 않아 검증된 기본 해설을 표시합니다.'}
 }
 document.querySelectorAll('[data-ai-topic]').forEach(b=>b.addEventListener('click',()=>showAi(b.dataset.aiTopic)));
