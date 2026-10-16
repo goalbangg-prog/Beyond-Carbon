@@ -10,6 +10,41 @@ const targets=[
  ['contribPlot','calc'],['exploreResult','explore'],['clusterResult','cluster']
 ];
 const panels={};
+const style=document.createElement('style');style.textContent=`
+.looply-result-layout{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(290px,1fr);gap:18px;align-items:start;margin-top:18px}
+.looply-result-layout>.looply-context-ai{margin:0!important;position:sticky;top:18px}
+.looply-result-layout>.viz,.looply-result-layout>#exploreResult,.looply-result-layout>#clusterResult{min-width:0}
+.looply-context-ai button{margin-top:12px;width:100%}
+@media(max-width:900px){.looply-result-layout{grid-template-columns:minmax(0,1fr)}.looply-result-layout>.looply-context-ai{position:static}}
+`;document.head.append(style);
+let calcRequest=0;
+function calcPayload(){
+ if(typeof calculations!=='function')return null;
+ const combined=new Map();
+ for(const x of calculations()){
+  if(!Number.isFinite(x.qty)||x.qty<0||!Number.isFinite(x.b.row.id))return null;
+  const id=x.b.row.id;combined.set(id,(combined.get(id)||0)+x.qty);
+ }
+ const items=[...combined].map(([id,quantity])=>({id,quantity}));
+ return items.length?{impact:Number($('impact')?.value||0),items}:null;
+}
+async function runCalcAI(){
+ const panel=panels.calc;if(!panel)return;
+ const payload=calcPayload();if(!payload){panel.status.textContent='항목과 유효한 사용량을 먼저 입력하세요.';return;}
+ const sequence=++calcRequest;
+ panel.status.textContent='서버에서 계수를 재검증하고 AI 설명을 생성하는 중…';
+ try{
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),22000);
+  let response;try{response=await fetch((window.LOOPLY_AI_API_URL||'https://looply-ai-api.onrender.com').replace(/\\/$/,'')+'/api/calculation-insight',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:controller.signal})}finally{clearTimeout(timer)}
+  if(!response.ok)throw Error('HTTP '+response.status);
+  const result=await response.json();
+  if(sequence!==calcRequest||JSON.stringify(payload)!==JSON.stringify(calcPayload()))return;
+  if(!result.insight||typeof result.insight.finding!=='string')throw Error('Invalid response');
+  panel.text.textContent=[result.insight.finding,result.insight.meaning,result.insight.caution].join(' ');
+  panel.status.textContent=result.generation==='ai'?'서버 재계산 + AI 쉬운 해설':'서버 재계산 + 검증된 기본 해설';
+ }catch(e){if(sequence!==calcRequest)return;panel.status.textContent='AI 서버 연결 오류 · 아래 데이터 기반 설명은 유지됩니다.';panel.text.textContent=describe('calc');}
+}
+function staleCalc(){calcRequest++;if(panels.calc){panels.calc.status.textContent='분석 조건이 변경되었습니다 · AI 해설을 다시 생성해 주세요.';panels.calc.text.textContent=describe('calc')}}
 function n(v){return Number(v).toLocaleString('ko-KR',{maximumSignificantDigits:4})}
 function createPanel(anchor,key){
  const card=document.createElement('aside');card.className='looply-context-ai';
@@ -18,8 +53,13 @@ function createPanel(anchor,key){
  const text=document.createElement('p');text.style.margin='8px 0';text.setAttribute('aria-live','polite');
  const status=document.createElement('small');status.style.color='#66788a';status.textContent='현재 화면의 데이터로 계산한 설명 · AI 맞춤 생성 연동 준비 중';
  card.append(title,text,status);
+ if(key==='calc'){
+  const button=document.createElement('button');button.type='button';button.textContent='현재 계산 결과 AI 해설';button.addEventListener('click',runCalcAI);card.append(button);
+ }
  if(key.startsWith('report-')){const parent=anchor.closest('.story-card');if(parent?.nextElementSibling)parent.nextElementSibling.append(card);else anchor.after(card)}
- else anchor.after(card);
+ else if(['calc','explore','cluster'].includes(key)){
+  const wrap=document.createElement('div');wrap.className='looply-result-layout';anchor.before(wrap);wrap.append(anchor,card);
+ } else anchor.after(card);
  panels[key]={text,status};
 }
 function describe(key){
@@ -62,14 +102,14 @@ function describe(key){
  }
  return '';
 }
-function update(key){const panel=panels[key];if(!panel)return;panel.text.textContent=describe(key);}
+function update(key){const panel=panels[key];if(!panel)return;panel.text.textContent=describe(key);if(key==='calc')panel.status.textContent='현재 화면의 데이터로 계산한 설명 · 버튼을 누르면 AI 해설 생성';}
 for(const [id,key] of targets){const el=$(id);if(el)createPanel(el,key);}
 function updateAll(){Object.keys(panels).forEach(update)}
 updateAll();
 const watch=['impact','exStage','exUnit','exImpact','exImpact2','exMode','clusterScope','clusterK','runCluster','add','clear','example','recommendK'];
-watch.forEach(id=>$(id)?.addEventListener('change',()=>setTimeout(updateAll,80)));
-watch.forEach(id=>$(id)?.addEventListener('click',()=>setTimeout(updateAll,120)));
-['basket','clusterChecks'].forEach(id=>$(id)?.addEventListener('change',()=>setTimeout(updateAll,120)));
+watch.forEach(id=>$(id)?.addEventListener('change',()=>{if(id==='impact')staleCalc();setTimeout(updateAll,80)}));
+watch.forEach(id=>$(id)?.addEventListener('click',()=>{if(['add','clear','example'].includes(id))staleCalc();setTimeout(updateAll,120)}));
+['basket','clusterChecks'].forEach(id=>$(id)?.addEventListener('change',()=>{if(id==='basket')staleCalc();setTimeout(updateAll,120)}));
 document.querySelectorAll('[data-tab]').forEach(el=>el.addEventListener('click',()=>setTimeout(updateAll,80)));
 window.LooplyContextInsights={updateAll};
 })();
