@@ -1,5 +1,7 @@
 """Looply AI insights API. Run: uvicorn api.main:app --reload"""
 import json
+import csv
+import math
 import logging
 import os
 import time
@@ -85,3 +87,102 @@ def insights(req: InsightRequest, request: Request):
     except Exception as exc:
         logger.warning("AI insight rejected: topic=%s error_type=%s reason=%s", req.topic, type(exc).__name__, "numeric_validation" if isinstance(exc, ValueError) and str(exc) == "unverified numeric claim" else "response_or_provider_error")
         raise HTTPException(502, "AI 해설을 생성하지 못했습니다. 잠시 후 다시 시도해 주세요.") from exc
+
+# Calculation explanations are recomputed against the canonical CSV; client totals are never trusted.
+_CSV_PATH = Path(__file__).resolve().parents[1] / "data" / "lca_factors_clean.csv"
+with _CSV_PATH.open(encoding="utf-8-sig", newline="") as _file:
+    FACTOR_ROWS = list(csv.DictReader(_file))
+IMPACT_COLUMNS = [
+    "탄소발자국(kg CO2 eq)", "자원발자국(kg Sb eq)",
+    "산성비(kg SO2 eq)", "부영양화(kg PO43- eq)",
+    "물소모계수(m3 H2O eq)"
+]
+IMPACT_NAMES = ["탄소발자국", "자원발자국", "산성화", "부영양화", "물발자국"]
+IMPACT_SYMBOLS = ["kg CO₂ eq", "kg Sb eq", "kg SO₂ eq", "kg PO₄³⁻ eq", "m³ H₂O eq"]
+
+class CalculationItem(BaseModel):
+    id: int = Field(ge=0, lt=398)
+    quantity: float = Field(ge=0, le=1e9, allow_inf_nan=False)
+
+class CalculationInsightRequest(BaseModel):
+    impact: int = Field(ge=0, le=4)
+    items: list[CalculationItem] = Field(min_length=1, max_length=20)
+
+def calculation_facts(req: CalculationInsightRequest):
+    if len({x.id for x in req.items}) != len(req.items):
+        raise HTTPException(422, "같은 항목을 중복해서 제출할 수 없습니다.")
+    col = IMPACT_COLUMNS[req.impact]
+    contributions = []
+    missing = []
+    for item in req.items:
+        row = FACTOR_ROWS[item.id]
+        value = row[col].strip()
+        if not value:
+            missing.append(row["원료_에너지"])
+            continue
+        amount = float(value) * item.quantity
+        if not math.isfinite(amount):
+            raise HTTPException(422, "계산 결과가 허용 범위를 벗어났습니다.")
+        contributions.append({"name": row["원료_에너지"], "value": amount})
+    total = sum(x["value"] for x in contributions)
+    if not math.isfinite(total):
+        raise HTTPException(422, "계산 결과가 허용 범위를 벗어났습니다.")
+    biggest = max(contributions, key=lambda x: x["value"]) if contributions else None
+    finding = (f"{IMPACT_NAMES[req.impact]} 부분 계산: 유효한 항목 {len(contributions)}개, "
+               f"결측 항목 {len(missing)}개, 합계 {total:.6g} {IMPACT_SYMBOLS[req.impact]}."
+               + (f" 가장 큰 기여 항목은 {biggest['name']}입니다." if biggest else " 계산 가능한 계수가 없습니다."))
+    return {
+        "finding": finding,
+        "meaning": "선택한 항목의 기준 단위로 환산된 사용량과 평가계수를 곱한 부분 결과입니다.",
+        "caution": "결측값은 0이 아닙니다. 이 결과는 제품 전체의 LCA나 공식 인증 결과가 아닙니다.",
+        "total": total,
+        "valid_count": len(contributions),
+        "missing_count": len(missing),
+        "contributions": contributions,
+        "impact_name": IMPACT_NAMES[req.impact],
+        "impact_symbol": IMPACT_SYMBOLS[req.impact],
+    }
+
+@app.post("/api/calculation-insight")
+def calculation_insight(req: CalculationInsightRequest, request: Request):
+    global GENERATIONS
+    facts = calculation_facts(req)
+    # No AI tokens spent for identical calculations or missing API credentials.
+    cache_key = "calc:" + json.dumps(req.model_dump(), sort_keys=True)
+    with GUARD_LOCK:
+        if cache_key in AI_CACHE:
+            return AI_CACHE[cache_key]
+    base = {k: facts[k] for k in ("finding", "meaning", "caution")}
+    result = {"insight": base, "facts": {k: facts[k] for k in ("total", "valid_count", "missing_count", "impact_name", "impact_symbol")}, "generation": "audited_fallback", "source": "data/lca_factors_clean.csv"}
+    if not os.getenv("OPENAI_API_KEY"):
+        return result
+    with GUARD_LOCK:
+        ip = request.client.host if request.client else "unknown"
+        now = time.monotonic()
+        history = REQUEST_TIMES[ip]
+        while history and now - history[0] > 3600:
+            history.popleft()
+        if len(history) >= RATE_LIMIT or GENERATIONS >= MAX_GENERATIONS:
+            return result
+        history.append(now)
+        GENERATIONS += 1
+    try:
+        from openai import OpenAI
+        response = OpenAI(api_key=os.environ["OPENAI_API_KEY"], timeout=20).chat.completions.create(
+            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+            messages=[
+                {"role": "system", "content": SYSTEM + "\n추가 숫자를 쓰지 말고 meaning에만 쉬운 설명을 작성하세요."},
+                {"role": "user", "content": json.dumps({"facts": facts}, ensure_ascii=False)}
+            ], response_format={"type": "json_object"}, max_tokens=320, temperature=0.2
+        )
+        parsed = json.loads(response.choices[0].message.content)
+        meaning = parsed.get("meaning", "")
+        if safe_explanation(meaning):
+            result["insight"]["meaning"] = meaning
+            result["generation"] = "ai"
+    except Exception as exc:
+        logger.warning("Calculation AI fallback: %s", type(exc).__name__)
+    with GUARD_LOCK:
+        AI_CACHE[cache_key] = result
+    return result
+
