@@ -54,7 +54,7 @@ class TestApi(unittest.TestCase):
         mock = MagicMock()
         mock.chat.completions.create.return_value.choices[0].message.content = json.dumps({
             "finding": "검증되지 않은 999999배 차이가 납니다.",
-            "meaning": "확인되지 않은 주장입니다.",
+            "meaning": "검증되지 않은 999999배 차이입니다.",
             "caution": "주의하세요."
         }, ensure_ascii=False)
         with patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}), patch.dict(api_module.AI_CACHE, {}, clear=True), patch("openai.OpenAI", return_value=mock):
