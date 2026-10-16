@@ -195,5 +195,47 @@ class TestApi(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["generation"], "statistical")
 
+    def test_spearman_same_impact_rejected(self):
+        response = client.post("/api/correlation-insight", json={
+            "stage":"원료 및 에너지 생산","unit":"kg","impact_x":0,"impact_y":0
+        })
+        self.assertEqual(response.status_code,422)
+
+    def test_spearman_reports_pairwise_coverage(self):
+        from unittest.mock import patch
+        with patch.dict("os.environ",{"OPENAI_API_KEY":""}):
+            response = client.post("/api/correlation-insight", json={
+                "stage":"원료 및 에너지 생산","unit":"kg","impact_x":0,"impact_y":1
+            })
+        self.assertEqual(response.status_code,200)
+        result=response.json()
+        self.assertEqual(result["facts"]["total"],result["facts"]["paired"]+result["facts"]["excluded"])
+        self.assertEqual(result["generation"],"statistical")
+        if result["facts"]["rho"] is not None:
+            self.assertLessEqual(abs(result["facts"]["rho"]),1.00000001)
+
+    def test_cluster_requires_unique_impacts(self):
+        response=client.post("/api/cluster-insight",json={
+            "stage":"원료 및 에너지 생산","unit":"kg","impacts":[0,0],"k":3
+        })
+        self.assertEqual(response.status_code,422)
+
+    def test_cluster_profiles_and_silhouette(self):
+        from unittest.mock import patch
+        with patch.dict("os.environ",{"OPENAI_API_KEY":""}):
+            response=client.post("/api/cluster-insight",json={
+                "stage":"원료 및 에너지 생산","unit":"kg","impacts":[0,1],"k":3
+            })
+        self.assertEqual(response.status_code,200)
+        result=response.json()
+        stats=result["facts"]
+        self.assertEqual(sum(p["size"] for p in stats["profiles"]),stats["valid"])
+        self.assertEqual(stats["valid"]+stats["excluded"],stats["total"])
+        self.assertEqual(len(stats["profiles"]),3)
+        self.assertEqual(result["generation"],"statistical")
+        if stats["silhouette"] is not None:
+            self.assertGreaterEqual(stats["silhouette"],-1)
+            self.assertLessEqual(stats["silhouette"],1)
+
 if __name__ == "__main__":
     unittest.main()
