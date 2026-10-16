@@ -71,7 +71,7 @@ def insights(req: InsightRequest, request: Request):
         # (or their rounded equivalents); coverage may use only source counts.
         import re
         text_blob = " ".join(parsed[k] for k in ("finding", "meaning", "caution"))
-        numbers = [float(x) for x in re.findall(r"(?<![\\w.])\\d+(?:\\.\\d+)?", text_blob)]
+        numbers = [float(x) for x in re.findall(r"(?<![\w.])\d+(?:\.\d+)?", text_blob)]
         if req.topic == "cement":
             permitted = (1, 0.92632613, 0.503655563, 45.63, 45.64, 46, 0.93, 0.926, 0.50, 0.5, 0.504, 0.5037, 0.98)
         else:
