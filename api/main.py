@@ -206,7 +206,7 @@ class StatisticalInsightRequest(BaseModel):
     impact: int = Field(ge=0, le=4)
 
 @app.post("/api/statistical-insight")
-def statistical_insight(req: StatisticalInsightRequest):
+def statistical_insight(req: StatisticalInsightRequest, request: Request):
     scope = [r for r in FACTOR_ROWS if r["대분류"] == req.stage and r["단위"] == req.unit]
     if not scope:
         raise HTTPException(422, "선택한 범위에 데이터가 없습니다.")
@@ -234,7 +234,54 @@ def statistical_insight(req: StatisticalInsightRequest):
         meaning = "일부 항목이 일반적인 분포 범위에서 벗어납니다. 원자료와 단위를 확인해 특이값인지 검토할 수 있습니다."
     else:
         meaning = "선택한 범위에서는 IQR 기준 이상치가 발견되지 않았습니다. 분포의 치우침 여부는 그래프와 함께 확인하세요."
-    return {"finding":finding,"meaning":meaning,
+    base = {"finding":finding,"meaning":meaning,
             "caution":"이상치는 오류나 환경적 우열을 뜻하지 않습니다. 동일 단위의 계수 분포만 비교한 결과이며 제품 LCA가 아닙니다.",
             "facts":{"total":len(scope),"valid":len(valid),"missing":missing,"median":med,"q1":q1,"q3":q3,"outliers":outliers},
             "generation":"statistical"}
+    # AI is only allowed to paraphrase the meaning. All statistics and warnings stay deterministic.
+    cache_key = "stat:" + json.dumps(req.model_dump(), sort_keys=True, ensure_ascii=False)
+    with GUARD_LOCK:
+        cached = AI_CACHE.get(cache_key)
+        if cached is not None:
+            return cached
+    global GENERATIONS
+    if not os.getenv("OPENAI_API_KEY"):
+        return base
+    with GUARD_LOCK:
+        ip = request.client.host if request.client else "unknown"
+        now = time.monotonic()
+        history = REQUEST_TIMES[ip]
+        while history and now - history[0] > 3600:
+            history.popleft()
+        if len(history) >= RATE_LIMIT or GENERATIONS >= MAX_GENERATIONS:
+            return base
+        history.append(now)
+        GENERATIONS += 1
+    try:
+        from openai import OpenAI
+        response = OpenAI(api_key=os.environ["OPENAI_API_KEY"], timeout=20).chat.completions.create(
+            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+            messages=[
+                {"role":"system","content":(
+                    "환경 데이터 분석 결과를 일반인에게 설명합니다. JSON 객체의 meaning 필드 하나만 작성하세요. "
+                    "숫자, 백분율, 원인, 자료에 없는 사실을 새로 만들지 마세요. "
+                    "통계가 의미하는 점과 다음에 확인할 사항을 쉬운 한국어 1~2문장으로 설명하세요. "
+                    "이상치를 오류나 환경적 우열로 단정하지 마세요."
+                )},
+                {"role":"user","content":json.dumps({
+                    "scope":{"stage":req.stage,"unit":req.unit,"impact":IMPACT_NAMES[req.impact]},
+                    "verified_finding":finding,"verified_facts":base["facts"],
+                    "default_meaning":meaning
+                },ensure_ascii=False)}
+            ],response_format={"type":"json_object"},max_tokens=180,temperature=0.2
+        )
+        parsed = json.loads(response.choices[0].message.content)
+        explanation = parsed.get("meaning") if isinstance(parsed,dict) else None
+        if safe_explanation(explanation):
+            base["meaning"] = explanation
+            base["generation"] = "ai"
+    except Exception as exc:
+        logger.warning("Statistical insight fallback: %s",type(exc).__name__)
+    with GUARD_LOCK:
+        AI_CACHE[cache_key] = base
+    return base
