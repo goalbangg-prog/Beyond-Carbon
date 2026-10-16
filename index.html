@@ -223,6 +223,23 @@ button:active{transform:scale(.98)}
 #story .story-card h3{line-height:1.5}
 .top{align-items:center}
 @media(max-width:600px){.site-header{padding:13px 18px}.site-brand{font-size:17px}.site-brand-sub{font-size:11px}#story .story-hero h1{font-size:clamp(31px,8vw,45px)}}
+
+/* V3.8: viewport-aware reading flow */
+#story .story-section{padding:28px 0 52px;scroll-margin-top:85px}
+#story .story-divider{margin:0 0 24px}
+#story .story-heading{margin-bottom:22px}
+#story .story-heading h2{margin:10px 0}
+#story .story-metrics{margin:12px 0 22px}
+#story .story-grid{gap:16px}
+#story .story-chart{min-height:350px}
+#story .story-card{padding:clamp(16px,1.9vw,24px)}
+#story .story-note{margin-top:12px}
+#story .story-hero{min-height:min(620px,calc(100svh - 145px));padding-block:clamp(30px,5vh,64px)}
+#story .story-hero h1{font-size:clamp(34px,4.2vw,62px)}
+#story .story-method .story-card{min-height:0}
+#story .story-metric{padding:18px 22px}
+@media(max-width:850px){#story .story-section{padding:22px 0 45px}#story .story-chart{min-height:320px}#story .story-hero{min-height:460px}}
+@media(max-width:550px){#story .story-hero{min-height:440px}#story .story-section{padding:18px 0 35px}}
 </style></head><body><header class="site-header"><a class="site-brand" href="#story" aria-label="Looply 분석 리포트 첫 화면으로 이동"><span class="brand-dot"></span><span>Looply</span><span class="site-brand-sub">LCA 데이터 분석</span></a></header><main class="wrap"><div class="top"><span class="pill" id="datasetBadge">평가계수 데이터 로딩 중</span><select id="theme" class="hidden" aria-label="고정 테마"><option value="navy" selected>Carbon Navy</option></select></div><nav class="tabs"><button data-tab="story" class="active">분석 리포트</button><button data-tab="calc">환경영향 계산</button><button data-tab="explore">데이터 인사이트</button><button data-tab="cluster">군집 분석</button></nav>
 
 <section id="story" aria-label="환경영향 데이터 분석 리포트"><div class="story-nav" aria-label="리포트 키보드 및 버튼 탐색"><button id="storyPrev" type="button" title="이전 장 (↑)">↑ <span>이전</span></button><span class="story-nav-label">REPORT</span><button id="storyNext" type="button" title="다음 장 (↓)">↓ <span>다음</span></button><span class="story-nav-hint">← → 분석 메뉴 이동</span></div>
@@ -493,19 +510,7 @@ document.querySelectorAll('.tabs [data-tab]').forEach(b=>b.addEventListener('cli
  const sample=all.filter(r=>r.stage==='원료 및 에너지 생산'&&r.unit==='kg');
  const dataInsight=document.getElementById('storyDataInsight');
  if(dataInsight)dataInsight.innerHTML='<strong>데이터 구성에서 알 수 있는 점</strong><br>전체 '+all.length+'개 중 가장 많은 대분류는 <strong>'+largest[0]+'</strong>('+largest[1]+'개)입니다. 보고서의 핵심 비교는 같은 기준 단위인 <strong>kg 항목 '+sample.length+'개</strong>를 대상으로 합니다. 단위가 다른 계수는 단순히 크기순으로 비교하지 않습니다.';
- const storyIds=['story','story-data','story-distribution','story-relationship','story-clustering','story-try','story-methodology'];
- document.addEventListener('keydown',e=>{
-   if(!['ArrowDown','ArrowUp','PageDown','PageUp',' ','Home','End'].includes(e.key))return;
-   if(e.ctrlKey||e.altKey||e.metaKey||e.shiftKey)return;
-   const t=e.target;if(t&&(/INPUT|TEXTAREA|SELECT|BUTTON/.test(t.tagName)||t.isContentEditable||t.closest('details')))return;
-   const story=document.getElementById('story');if(!story||story.classList.contains('hidden'))return;
-   const sections=storyIds.map(id=>document.getElementById(id)).filter(Boolean);
-   const y=window.scrollY+140;
-   let current=0;sections.forEach((el,i)=>{if(el.getBoundingClientRect().top+window.scrollY<=y)current=i});
-   const next=e.key==='Home'?0:e.key==='End'?sections.length-1:Math.max(0,Math.min(sections.length-1,current+(['ArrowUp','PageUp'].includes(e.key)?-1:1)));
-   if(next===current&&e.key!=='Home'&&e.key!=='End')return;
-   e.preventDefault();sections[next].scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
- });
+ /* Navigation is handled by the unified viewport-aware controller below. */
 })();
 </script>
 <script>
@@ -559,11 +564,43 @@ document.querySelector('[data-tab="explore"]')?.addEventListener('click',()=>set
 refreshScope();
 const sections=['story','story-data','story-distribution','story-relationship','story-clustering','story-try','story-methodology'].map(byId).filter(Boolean);
 function move(delta){
- const y=scrollY+160;let current=0;sections.forEach((el,i)=>{if(el.getBoundingClientRect().top+scrollY<=y)current=i});
- sections[Math.max(0,Math.min(sections.length-1,current+delta))]?.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
+ const visible=sections.filter(el=>el.getClientRects().length);
+ if(!visible.length)return;
+ const viewTop=window.scrollY+88;
+ const viewBottom=window.scrollY+window.innerHeight-28;
+ const tolerance=18;
+ const current=visible.findIndex(el=>{const top=el.getBoundingClientRect().top+window.scrollY;const bottom=el.getBoundingClientRect().bottom+window.scrollY;return top<=viewTop+tolerance&&bottom>=viewBottom-tolerance});
+ let target;
+ if(delta>0){
+   const section=current>=0?visible[current]:visible.find(el=>el.getBoundingClientRect().bottom>100);
+   if(!section)return;
+   const bottom=section.getBoundingClientRect().bottom+window.scrollY;
+   if(bottom>viewBottom+tolerance){
+     target=Math.min(window.scrollY+Math.max(260,window.innerHeight*.78),bottom-window.innerHeight+35);
+   }else{
+     const index=visible.indexOf(section);target=visible[Math.min(index+1,visible.length-1)].getBoundingClientRect().top+window.scrollY-84;
+   }
+ }else{
+   const section=current>=0?visible[current]:[...visible].reverse().find(el=>el.getBoundingClientRect().top<window.innerHeight-100);
+   if(!section)return;
+   const top=section.getBoundingClientRect().top+window.scrollY-84;
+   if(top<window.scrollY-tolerance){target=Math.max(window.scrollY-Math.max(260,window.innerHeight*.78),top)}
+   else{const index=visible.indexOf(section);target=visible[Math.max(index-1,0)].getBoundingClientRect().top+window.scrollY-84}
+ }
+ window.scrollTo({top:Math.max(0,target),behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
 }
 byId('storyPrev')?.addEventListener('click',()=>move(-1));
 byId('storyNext')?.addEventListener('click',()=>move(1));
+document.addEventListener('keydown',e=>{
+ if(!['ArrowDown','ArrowUp','PageDown','PageUp',' ','Home','End'].includes(e.key))return;
+ if(e.ctrlKey||e.altKey||e.metaKey||e.shiftKey)return;
+ const target=e.target;if(target&&(/INPUT|TEXTAREA|SELECT|BUTTON|SUMMARY/.test(target.tagName)||target.isContentEditable||target.closest('details')))return;
+ if(byId('story')?.classList.contains('hidden'))return;
+ e.preventDefault();
+ if(e.key==='Home')window.scrollTo({top:0,behavior:'smooth'});
+ else if(e.key==='End')window.scrollTo({top:document.documentElement.scrollHeight,behavior:'smooth'});
+ else move(['ArrowUp','PageUp'].includes(e.key)?-1:1);
+});
 document.addEventListener('keydown',e=>{
  if(!['ArrowLeft','ArrowRight'].includes(e.key)||e.altKey||e.ctrlKey||e.metaKey)return;
  const target=e.target;if(target&&(/INPUT|SELECT|TEXTAREA|BUTTON/.test(target.tagName)||target.isContentEditable))return;
