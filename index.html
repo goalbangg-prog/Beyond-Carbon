@@ -5,7 +5,7 @@
 <div class="panel"><div class="cardhead"><h2>02 · 계산 목록</h2><div class="compact"><button class="secondary" id="example">예시 불러오기</button><button class="secondary" id="clear">모두 비우기</button></div></div><div id="basket"><p class="muted">항목을 선택하고 계산 목록에 담아보세요.</p></div></div>
 <div class="panel"><h2>03 · 환경영향 결과</h2><div id="metrics" class="metrics"></div><div id="warnings"></div><div class="cardhead" style="margin-top:24px"><h3>항목별 기여량</h3><select id="impact" style="max-width:220px"></select></div><div id="bars"></div><div id="contribPlot" class="viz"></div><div id="contribHeat" class="viz"></div><div id="stageDonut" class="viz"></div><div class="cardhead" style="margin-top:20px"><h3>계산 상세</h3><button id="export">결과 CSV 저장</button></div><div id="details" class="scroll"></div></div></section>
 <section id="explore" class="hidden"><div class="panel"><h2>데이터 탐색</h2><p class="muted">동일한 계수 기준 단위를 갖는 항목만 비교합니다.</p><div class="grid three"><div><label>대분류</label><select id="exStage"></select></div><div><label>기준 단위</label><select id="exUnit"></select></div><div><label>영향 항목</label><select id="exImpact"></select></div></div><div class="grid two" style="margin-top:14px"><div><label>분석 방법</label><select id="exMode"><option value="rank">계수 순위</option><option value="hist">로그 분포</option><option value="box">구분별 박스플롯</option><option value="scatter">두 영향 항목 비교</option><option value="corr">스피어만 상관계수</option></select></div><div><label>보조 영향 항목 (산점도)</label><select id="exImpact2"></select></div></div><div id="exploreResult" style="margin-top:24px"></div></div></section>
-<section id="cluster" class="hidden"><div class="panel"><h2>유사 원료 묶기 · KMeans</h2><p class="muted">양수이고 결측이 없는 계수에 log10 변환 → 표준화 → KMeans를 적용합니다. 브라우저에서 계산하며 공식 LCA 분류가 아닙니다.</p><div id="clusterChecks" class="compact"></div><div class="grid three" style="margin-top:15px"><div><label>분석 범위 (대분류 · 단위)</label><select id="clusterScope"></select></div><div><label>군집 수</label><select id="clusterK"><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option></select></div><div style="align-self:end"><button id="runCluster" style="width:100%">군집 분석 실행</button></div></div><div id="clusterResult" style="margin-top:22px"></div></div></section>
+<section id="cluster" class="hidden"><div class="panel"><h2>유사 원료 묶기 · KMeans</h2><p class="muted">양수이고 결측이 없는 계수에 log10 변환 → 표준화 → KMeans를 적용합니다. 브라우저에서 계산하며 공식 LCA 분류가 아닙니다.</p><div id="clusterChecks" class="compact"></div><div class="grid three" style="margin-top:15px"><div><label>분석 범위 (대분류 · 단위)</label><select id="clusterScope"></select></div><div><label>군집 수</label><select id="clusterK"><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option></select></div><div style="align-self:end"><button id="runCluster" style="width:100%">군집 분석 실행</button></div></div><div style="margin-top:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><button type="button" id="recommendK" class="secondary">군집 수 추천 (실루엣 점수)</button><span id="recommendResult" class="muted" aria-live="polite">선택한 데이터로 k=2~6을 비교합니다.</span></div><div id="clusterResult" style="margin-top:22px"></div></div></section>
 <section id="about" class="hidden"><div class="panel"><h2>이용 안내 및 해석 범위</h2><p>① 대분류와 원료를 고르고 사용량을 입력한 뒤 담기 → ② 여러 항목을 합산 → ③ 환경영향 결과와 상세 CSV 확인.</p><p>환경영향 5개: 탄소발자국(kg CO₂ eq), 자원발자국(kg Sb eq), 산성비(kg SO₂ eq), 부영양화(kg PO₄³⁻ eq), 물소모계수(m³ H₂O eq).</p><p><strong>중요:</strong> 이 도구는 제공된 계수를 이용한 연습용 부분 산정 도구이며, 제품 전체 생애주기 LCA, PCF 또는 EPD 인증 결과가 아닙니다. 시스템 경계, 기능단위, 배분, 공정별 활동자료 및 데이터 품질을 별도로 검토해야 합니다.</p><p>결측값은 0으로 대체하지 않으며, 계수 단위가 해석되지 않으면 다른 단위로의 변환을 허용하지 않습니다. 화학반응공정은 계산기에서 제외합니다.</p><p class="muted">데이터 출처: 한국환경산업기술원, 환경성적표지 평가계수 (2021-08-02 제공 자료). 공개 배포 시 원자료 이용조건 및 최신 계수 적용 여부를 확인하세요.</p><details class="convert"><summary><strong>간단 단위 변환기 열기</strong></summary><div class="compact" style="margin-top:12px"><select id="convFamily"></select><input id="convAmount" type="number" value="1" step="any"><select id="convFrom"></select><span>→</span><select id="convTo"></select><strong id="convResult"></strong></div></details></div></section><footer>© LCA mini 계산기 · 학습 및 포트폴리오 목적 · 결과의 실무 적용 전 검증 필요</footer></main>
 <script>
 const data=window.LCA_DATA||[];const impacts=['탄소','자원','산성비','부영양화','물소모'],symbols=['kg CO₂ eq','kg Sb eq','kg SO₂ eq','kg PO₄³⁻ eq','m³ H₂O eq'];const stages=['원료 및 에너지 생산','수송','연료원별 사용','폐기물 처리'];const families={질량:{mg:1e-6,g:.001,kg:1,t:1000,lb:.45359237},부피:{mL:.001,L:1,m3:1000,kL:1000,'gal(US)':3.785411784},에너지:{MJ:1,kWh:3.6,GJ:1000,kcal:.004184},수송량:{'kg.km':.001,'ton.km':1}};const alias={kg:'kg',g:'g',t:'t',ton:'t',l:'L',m3:'m3','ton.km':'ton.km',mj:'MJ',kwh:'kWh'};const $=id=>document.getElementById(id);let basket=[];const unique=a=>[...new Set(a)];const fmt=n=>n==null||!Number.isFinite(n)?'—':Number(n).toLocaleString('ko-KR',{maximumSignificantDigits:5});const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));function opts(el,arr,display=x=>x,keep=true){let old=keep?el.value:null;el.innerHTML=arr.map(x=>`<option value="${esc(x)}">${esc(display(x))}</option>`).join('');if(arr.includes(old))el.value=old}function base(u){return alias[String(u).trim().split(/\s+/)[0].toLowerCase()]||null}function family(u){return Object.values(families).find(f=>u in f)||null}function choices(row){let b=base(row.unit),f=b&&family(b);return f?Object.keys(f):[row.unit]}function converted(amount,from,row){let b=base(row.unit),f=b&&family(b);if(f&&from in f)return amount*f[from]/f[b];return from===row.unit?amount:null}function rows(){return data.filter(r=>stages.includes(r.stage))}function updateFilters(){let pool=rows().filter(r=>r.stage===$('stage').value);opts($('nameFilter'),['전체',...unique(pool.map(r=>r.name)).sort((a,b)=>a.localeCompare(b,'ko'))]);updateCategory()}function updateCategory(){let pool=rows().filter(r=>r.stage===$('stage').value&&($('nameFilter').value==='전체'||r.name===$('nameFilter').value));opts($('category'),unique(pool.map(r=>r.category)).sort());updateMaterial()}function updateMaterial(){let pool=rows().filter(r=>r.stage===$('stage').value&&($('nameFilter').value==='전체'||r.name===$('nameFilter').value)&&r.category===$('category').value);let old=$('material').value;$('material').innerHTML=pool.map(r=>`<option value="${r.id}">${esc(r.name)} [${esc(r.unit)}]</option>`).join('');if(pool.some(r=>String(r.id)===old))$('material').value=old;updateUnit()}function updateUnit(){let r=data.find(r=>r.id===Number($('material').value));opts($('unit'),r?choices(r):[],x=>x,false);if(r){$('unit').value=base(r.unit)||r.unit;$('factorNote').textContent=`계수 기준: ${r.unit} · 탄소계수: ${fmt(r.v[0])} kg CO₂ eq / ${r.unit}`}else $('factorNote').textContent='조건에 맞는 항목이 없습니다.'}function add(r,amount,unit){if(!r||!Number.isFinite(amount)||amount<0)return alert('0 이상의 유효한 사용량을 입력하세요.');basket.push({id:Date.now()+Math.random(),row:r,amount,unit});render()}function calculations(){return basket.map(b=>({b,qty:converted(b.amount,b.unit,b.row),v:b.row.v.map(v=>v==null?null:v*converted(b.amount,b.unit,b.row))}))}function render(){let res=calculations();$('basket').innerHTML=res.length?res.map(({b},i)=>`<div class="item"><div><strong>${i+1}. ${esc(b.row.name)}</strong><small>${esc(b.row.stage)} › ${esc(b.row.category)} · 기준 ${esc(b.row.unit)}</small></div><input aria-label="사용량" type="number" min="0" step="any" data-amt="${b.id}" value="${b.amount}"><select aria-label="입력 단위" data-unit="${b.id}">${choices(b.row).map(u=>`<option ${u===b.unit?'selected':''}>${esc(u)}</option>`).join('')}</select><button class="secondary" data-del="${b.id}">삭제</button></div>`).join(''):'<p class="muted">아직 담은 항목이 없습니다.</p>';let totals=impacts.map((_,j)=>res.some(x=>x.v[j]!=null)?res.reduce((a,x)=>a+(x.v[j]??0),0):null);$('metrics').innerHTML=impacts.map((k,j)=>`<div class="metric"><span>${k}</span><b>${fmt(totals[j])}</b><span>${symbols[j]}</span></div>`).join('');let missing=impacts.map((k,j)=>({k,n:res.filter(x=>x.v[j]==null).length})).filter(x=>x.n);$('warnings').innerHTML=missing.length?`<div class="notice">⚠ 결측 계수: ${missing.map(x=>`${x.k} ${x.n}건`).join(' · ')}. 결측값은 0으로 간주하지 않았으며 합계는 불완전할 수 있습니다.</div>`:'';let j=Number($('impact').value||0),valid=res.filter(x=>x.v[j]!=null),max=Math.max(0,...valid.map(x=>Math.abs(x.v[j])));$('bars').innerHTML=valid.length?valid.map(x=>`<div class="barrow"><span>${esc(x.b.row.name)}</span><div class="track"><div class="fill" style="width:${max?100*Math.abs(x.v[j])/max:0}%"></div></div><span class="right">${fmt(x.v[j])}</span></div>`).join(''):'<p class="muted">표시할 결과가 없습니다.</p>';$('details').innerHTML=res.length?`<table><thead><tr><th>원료</th><th>사용량</th><th>환산량</th>${impacts.map(k=>`<th>${k}</th>`).join('')}</tr></thead><tbody>${res.map(x=>`<tr><td>${esc(x.b.row.name)}</td><td>${fmt(x.b.amount)} ${esc(x.b.unit)}</td><td>${fmt(x.qty)} ${esc(x.b.row.unit)}</td>${x.v.map(v=>`<td>${fmt(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>`:''}
@@ -20,7 +20,7 @@ for(let b of document.querySelectorAll('[data-tab]'))b.onclick=()=>{document.que
 const PLOT_CONFIG={responsive:true,displaylogo:false,toImageButtonOptions:{format:'png',scale:2}};
 const COLORS=['#247c91','#e2a95e','#56836b','#876fb2','#c56c74','#547ea7','#a4a44f'];
 function themeLayout(height=380,extras={}){return {height,margin:{l:90,r:24,t:38,b:65},paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',font:{family:'Malgun Gothic, Arial, sans-serif',color:getComputedStyle(document.body).getPropertyValue('--ink').trim()},hovermode:'closest',...extras}}
-function chart(id,traces,layout){let el=$(id);if(!el)return;if(!window.Plotly){el.innerHTML='<p class="notice">그래프 라이브러리를 불러오지 못했습니다. plotly.min.js 파일을 확인하세요.</p>';return}Plotly.react(el,traces,layout,PLOT_CONFIG)}
+function chart(id,traces,layout){let el=$(id);if(!el)return;if(!window.Plotly){el.innerHTML='<p class="notice">Plotly 라이브러리를 불러오지 못했습니다. 네트워크 연결을 확인하세요.</p>';return}Plotly.react(el,traces,layout,PLOT_CONFIG)}
 function plotBlock(target,title){target.innerHTML=`<h3>${esc(title)}</h3><div id="plotArea" class="viz"></div><p class="muted" id="plotNote"></p>`}
 function enhancedExplore(){let r=data.filter(x=>x.stage===$('exStage').value&&x.unit===$('exUnit').value),j=impacts.indexOf($('exImpact').value),k=impacts.indexOf($('exImpact2').value),mode=$('exMode').value,unit=$('exUnit').value,t=$('exploreResult');plotBlock(t,({'rank':'환경영향계수 순위','hist':'계수의 log10 분포','box':'구분별 계수 분포 (박스플롯)','scatter':'영향범주 간 관계 (산점도)','corr':'Spearman 순위상관 히트맵'})[mode]);$('plotNote').textContent=`${r.length}개 항목 · 계수 기준 단위: ${unit} · 결측값은 분석에서 제외`;
  if(mode==='rank'){let a=r.filter(x=>x.v[j]!=null).sort((a,b)=>b.v[j]-a.v[j]).slice(0,15).reverse();chart('plotArea',[{type:'bar',orientation:'h',x:a.map(x=>x.v[j]),y:a.map(x=>x.name+' · '+x.category),marker:{color:COLORS[0]},customdata:a.map(x=>x.category),hovertemplate:'%{y}<br>%{x:.4g}<extra></extra>'}],themeLayout(Math.max(350,a.length*34+95),{margin:{l:190,r:35,t:25,b:65},xaxis:{title:`${impacts[j]} (${symbols[j]} / ${unit})`},yaxis:{automargin:true}}));}
@@ -31,6 +31,81 @@ function enhancedExplore(){let r=data.filter(x=>x.stage===$('exStage').value&&x.
 }
 function enhancedCalc(){let res=calculations(),j=Number($('impact').value||0),valid=res.filter(x=>x.v[j]!=null),names=valid.map(x=>x.b.row.name),values=valid.map(x=>x.v[j]);if(!res.length){for(let id of ['contribPlot','contribHeat','stageDonut'])$(id).innerHTML='';return}chart('contribPlot',[{type:'bar',orientation:'h',x:values,y:names,marker:{color:COLORS[0]},hovertemplate:'%{y}<br>%{x:.4g}<extra></extra>'}],themeLayout(Math.max(300,names.length*40+120),{title:{text:`항목별 ${impacts[j]} 기여량`,font:{size:15}},margin:{l:180,r:25,t:65,b:55},xaxis:{title:symbols[j]},yaxis:{automargin:true}}));let z=res.map(x=>impacts.map((_,i)=>{let total=res.reduce((s,y)=>s+(y.v[i]??0),0);return x.v[i]==null||total<=0?null:100*x.v[i]/total}));chart('contribHeat',[{type:'heatmap',x:impacts,y:res.map(x=>x.b.row.name),z,zmin:0,zmax:100,colorscale:'Blues',text:z.map(row=>row.map(v=>v==null?'—':v.toFixed(0)+'%')),texttemplate:'%{text}',hovertemplate:'%{y}<br>%{x}: %{z:.1f}%<extra></extra>'}],themeLayout(Math.max(310,res.length*40+125),{title:{text:'영향범주별 항목 기여율 (%)',font:{size:15}},margin:{l:170,r:25,t:65,b:65}}));let groups={};for(let x of valid){groups[x.b.row.stage]=(groups[x.b.row.stage]||0)+x.v[j]}let positive=Object.entries(groups).filter(([,v])=>v>0);if(positive.length){chart('stageDonut',[{type:'pie',hole:.56,labels:positive.map(x=>x[0]),values:positive.map(x=>x[1]),marker:{colors:COLORS},textinfo:'percent',hovertemplate:'%{label}<br>%{value:.4g}<br>%{percent}<extra></extra>'}],themeLayout(370,{title:{text:`대분류별 ${impacts[j]} 기여율 (양수만)`,font:{size:15}},margin:{l:20,r:20,t:65,b:25},showlegend:true}))}else $('stageDonut').innerHTML='<p class="muted">양수인 대분류 합계가 없어 도넛 그래프를 표시하지 않습니다.</p>'}
 function enhancedCluster(){let sel=[...document.querySelectorAll('[data-cl]')].filter(x=>x.checked).map(x=>+x.value);if(sel.length<2)return alert('영향 항목을 2개 이상 선택하세요.');let scope=$('clusterScope').value;if(!scope)return $('clusterResult').textContent='군집 분석 가능한 범위가 없습니다.';let [stage,unit]=scope.split('|||'),a=data.filter(r=>r.stage===stage&&r.unit===unit&&sel.every(j=>r.v[j]>0)),k=+$('clusterK').value;if(a.length<k*4)return $('clusterResult').textContent='데이터가 부족합니다.';let logs=a.map(r=>sel.map(j=>Math.log10(r.v[j]))),means=sel.map((_,j)=>logs.reduce((s,x)=>s+x[j],0)/logs.length),std=sel.map((_,j)=>Math.sqrt(logs.reduce((s,x)=>s+(x[j]-means[j])**2,0)/logs.length)||1),X=logs.map(x=>x.map((v,j)=>(v-means[j])/std[j])),result=kmeans(X,k),order=result.centers.map((c,i)=>({i,m:c.reduce((s,v)=>s+v,0)/c.length})).sort((a,b)=>a.m-b.m),ranks=Object.fromEntries(order.map((x,i)=>[x.i,i+1]));let html='<h3>군집별 요약</h3><div class="grid three">';for(let i=1;i<=order.length;i++){let idx=order[i-1].i,members=a.filter((_,j)=>result.lab[j]===idx);html+=`<div class="metric"><strong>${i}번 묶음 · ${members.length}개</strong><p>${sel.map((j,z)=>`${impacts[j]}: ${result.centers[idx][z]>.5?'높음':result.centers[idx][z]<-.5?'낮음':'보통'}`).join('<br>')}</p><small>${members.slice(0,3).map(r=>esc(r.name)).join(', ')}</small></div>`}html+='</div><div id="clusterProfile" class="viz"></div><div id="clusterScatter" class="viz"></div><p class="muted">군집은 탐색용이며 공식 LCA 분류가 아닙니다. 브라우저의 초기화 방식은 scikit-learn의 KMeans++와 달라 결과가 일치하지 않을 수 있습니다.</p><div class="scroll"><table><tr><th>묶음</th><th>원료</th>'+sel.map(j=>`<th>${impacts[j]}</th>`).join('')+'</tr>'+a.map((r,i)=>`<tr><td>${ranks[result.lab[i]]}</td><td>${esc(r.name)}</td>${sel.map(j=>`<td>${fmt(r.v[j])}</td>`).join('')}</tr>`).join('')+'</table></div>';$('clusterResult').innerHTML=html;let profile=order.map(o=>result.centers[o.i]);chart('clusterProfile',[{type:'heatmap',x:sel.map(j=>impacts[j]),y:order.map((_,i)=>`${i+1}번 묶음`),z:profile,zmin:-2,zmax:2,colorscale:'RdBu',reversescale:true,text:profile.map(row=>row.map(v=>v.toFixed(2))),texttemplate:'%{text}',hovertemplate:'%{y}<br>%{x}: 표준화 중심값 %{z:.2f}<extra></extra>'}],themeLayout(Math.max(300,k*55+120),{title:{text:'군집 프로필 · log10 표준화 중심값',font:{size:15}},margin:{l:110,r:20,t:70,b:60}}));let [u,v]=sel.slice(0,2);chart('clusterScatter',order.map((o,i)=>{let d=a.filter((_,j)=>result.lab[j]===o.i);return {type:'scattergl',mode:'markers',name:`${i+1}번 묶음`,x:d.map(x=>x.v[u]),y:d.map(x=>x.v[v]),text:d.map(x=>x.name),marker:{size:10,color:COLORS[i],opacity:.78},hovertemplate:'%{text}<br>x=%{x:.4g}<br>y=%{y:.4g}<extra>%{fullData.name}</extra>'}}),themeLayout(480,{title:{text:'군집별 원료 분포',font:{size:15}},xaxis:{type:'log',title:`${impacts[u]} (${symbols[u]} / ${unit})`},yaxis:{type:'log',title:`${impacts[v]} (${symbols[v]} / ${unit})`},legend:{orientation:'h',y:-.25},margin:{l:80,r:25,t:70,b:100}}))}
+
+/* V2.1: visible axis titles and a reproducible, data-rich first view. */
+const baseChart=chart;
+chart=function(id,traces,layout){
+  const l={...layout,margin:{l:95,r:45,t:layout?.margin?.t??60,b:105,...(layout?.margin||{})}};
+  for(const key of ['xaxis','yaxis']){
+    if(l[key]){
+      const a={...l[key],automargin:true};
+      if(typeof a.title==='string')a.title={text:a.title,font:{size:13},standoff:18};
+      else if(a.title&&typeof a.title==='object')a.title={font:{size:13},standoff:18,...a.title};
+      a.tickfont={size:11,...a.tickfont};
+      l[key]=a;
+    }
+  }
+  if(l.xaxis?.title?.text)l.margin.b=Math.max(l.margin.b,105);
+  if(l.yaxis?.title?.text)l.margin.l=Math.max(l.margin.l,105);
+  baseChart(id,traces,l);
+};
+function recommendClusters(){
+ const el=$('recommendResult'),selected=[...document.querySelectorAll('[data-cl]')].filter(x=>x.checked).map(x=>+x.value);
+ const scope=$('clusterScope').value;
+ if(selected.length<2||!scope){el.textContent='영향 항목 2개 이상과 분석 범위를 선택하세요.';return}
+ const [stage,unit]=scope.split('|||');
+ const rows=data.filter(r=>r.stage===stage&&r.unit===unit&&selected.every(j=>r.v[j]>0));
+ if(rows.length<12){el.textContent='유효한 데이터가 12개 이상 필요합니다.';return}
+ const logs=rows.map(r=>selected.map(j=>Math.log10(r.v[j])));
+ const means=selected.map((_,j)=>logs.reduce((t,x)=>t+x[j],0)/logs.length);
+ const std=selected.map((_,j)=>Math.sqrt(logs.reduce((t,x)=>t+(x[j]-means[j])**2,0)/logs.length)||1);
+ const all=logs.map(x=>x.map((v,j)=>(v-means[j])/std[j]));
+ // Stable systematic sampling keeps browser-side silhouette computations responsive.
+ const X=all.length>180?Array.from({length:180},(_,i)=>all[Math.floor(i*(all.length-1)/179)]):all;
+ const dist=(a,b)=>Math.sqrt(a.reduce((t,v,j)=>t+(v-b[j])**2,0));
+ const scores=[];
+ for(let k=2;k<=Math.min(6,Math.floor(X.length/4));k++){
+   const {lab}=kmeans(X,k),groups=Array.from({length:k},()=>[]);
+   lab.forEach((g,i)=>groups[g]?.push(i));
+   if(groups.some(g=>g.length<2))continue;
+   let sum=0;
+   for(let i=0;i<X.length;i++){
+     const own=groups[lab[i]];
+     const a=own.reduce((t,z)=>t+(z===i?0:dist(X[i],X[z])),0)/(own.length-1);
+     let b=Infinity;
+     groups.forEach((g,j)=>{if(j!==lab[i])b=Math.min(b,g.reduce((t,z)=>t+dist(X[i],X[z]),0)/g.length)});
+     sum+=(b-a)/Math.max(a,b,1e-12);
+   }
+   scores.push({k,score:sum/X.length});
+ }
+ if(!scores.length){el.textContent='유효한 군집 수를 평가할 수 없습니다.';return}
+ scores.sort((a,b)=>b.score-a.score);
+ const best=scores[0];$('clusterK').value=String(best.k);
+ el.textContent='추천 '+best.k+'개 · 평균 실루엣 '+best.score.toFixed(3)+' (최대 '+X.length+'개 표본, 브라우저 KMeans 기준)';
+ enhancedCluster();
+}
+$('recommendK').addEventListener('click',recommendClusters);
+const priorScopes=clusterScopes;
+clusterScopes=function(){priorScopes();$('recommendResult').textContent='분석 범위를 선택한 뒤 군집 수 추천을 실행하세요.'};
+document.querySelectorAll('[data-cl]').forEach(x=>x.onchange=clusterScopes);
+$('clusterScope').addEventListener('change',()=>{$('recommendResult').textContent='군집 수 추천을 다시 실행하세요.'});
+function setShowcaseDefaults(){
+ const stage='원료 및 에너지 생산';
+ if([...$('exStage').options].some(x=>x.value===stage))$('exStage').value=stage;
+ const counts=new Map();
+ data.filter(r=>r.stage===$('exStage').value).forEach(r=>counts.set(r.unit,(counts.get(r.unit)||0)+1));
+ const best=[...counts].sort((a,b)=>b[1]-a[1])[0]?.[0];
+ exUnits();
+ if(best&&[...$('exUnit').options].some(x=>x.value===best))$('exUnit').value=best;
+ $('exImpact').value='탄소';$('exImpact2').value='자원';
+ $('exMode').value='scatter';
+ enhancedExplore();
+ const options=[...$('clusterScope').options];
+ if(options.length) $('clusterScope').value=options[0].value;
+ $('clusterK').value='3';
+}
+setShowcaseDefaults();
+
 explore=enhancedExplore;cluster=enhancedCluster;
 $('runCluster').onclick=enhancedCluster;
 for(let id of ['exUnit','exImpact','exImpact2','exMode'])$(id).onchange=enhancedExplore;
