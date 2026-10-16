@@ -65,8 +65,19 @@ def insights(req: InsightRequest, request: Request):
             messages=[{"role":"system","content":SYSTEM},{"role":"user","content":json.dumps({"topic":req.topic,"question":req.question,"facts":facts},ensure_ascii=False)}],
             response_format={"type":"json_object"}, max_tokens=450, temperature=0.2)
         parsed = json.loads(response.choices[0].message.content)
-        if not isinstance(parsed, dict) or not all(isinstance(parsed.get(k),str) for k in ("finding","meaning","caution")):
+        if not isinstance(parsed, dict) or not all(isinstance(parsed.get(k),str) and 0 < len(parsed[k]) <= 600 for k in ("finding","meaning","caution")):
             raise ValueError("invalid AI response")
+        # Guardrail: reject fabricated numbers. Cement insight may use only source facts
+        # (or their rounded equivalents); coverage may use only source counts.
+        import re
+        text_blob = " ".join(parsed[k] for k in ("finding", "meaning", "caution"))
+        numbers = [float(x) for x in re.findall(r"(?<![\\w.])\\d+(?:\\.\\d+)?", text_blob)]
+        if req.topic == "cement":
+            permitted = (1, 0.92632613, 0.503655563, 45.63, 45.64, 46, 0.93, 0.926, 0.50, 0.5, 0.504, 0.5037, 0.98)
+        else:
+            permitted = tuple([398, 198, 10, 32, 113, 45, 223, 210, 190, 200, 175, 188, 208, 198, 0, 1, 2, 3, 4, 5, 50] + list(STATS["stage_counts"].values()) + STATS["valid_counts"] + STATS["missing_counts"])
+        if any(not any(abs(n - p) <= 0.011 for p in permitted) for n in numbers):
+            raise ValueError("unverified numeric claim")
         result = {"topic":req.topic,"insight":{k:parsed[k] for k in ("finding","meaning","caution")},"source":"data/ai_facts.json"}
         with GUARD_LOCK:
             AI_CACHE[req.topic] = result
