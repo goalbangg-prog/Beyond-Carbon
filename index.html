@@ -327,7 +327,37 @@ html,body{scroll-snap-type:none!important}
  nav.tabs{position:sticky!important;top:0!important;z-index:60!important;display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;gap:6px!important;padding:9px!important;margin:8px 0 16px!important;background:#f5f7fb!important;border:1px solid #dfe7f2!important;border-radius:12px!important}
  nav.tabs button{white-space:nowrap!important;flex:1 0 auto!important;font-size:12px!important}
 }
-</style></head><body><header class="site-header"><a class="site-brand" href="#story" aria-label="Looply 분석 리포트 첫 화면으로 이동"><span class="brand-dot"></span><span>Looply</span><span class="site-brand-sub">LCA 데이터 분석</span></a></header><main class="wrap"><div class="top"><span class="pill" id="datasetBadge">평가계수 데이터 로딩 중</span><select id="theme" class="hidden" aria-label="고정 테마"><option value="navy" selected>Carbon Navy</option></select></div><nav class="tabs"><button data-tab="story" class="active">분석 리포트</button><button data-tab="calc">환경영향 계산</button><button data-tab="explore">데이터 인사이트</button><button data-tab="cluster">군집 분석</button></nav>
+
+/* V4.4 — integrated brand sidebar, calm typography and motion */
+.site-header{display:none!important}
+body{line-height:1.7;letter-spacing:-.012em}
+main.wrap{margin-top:clamp(12px,2.5vh,30px)!important}
+nav.tabs .site-brand{display:flex!important;align-items:center!important;gap:9px!important;text-decoration:none!important;white-space:normal!important;min-width:0!important}
+nav.tabs .site-brand .brand-dot{flex-shrink:0}
+nav.tabs .site-brand-sub{display:block!important;font-size:11px!important;line-height:1.4!important;letter-spacing:-.015em!important;white-space:normal!important}
+nav.tabs .sidebar-divider{height:1px;flex:none;background:#ffffff26;margin:12px 8px 18px}
+#story .story-heading h2,#story .story-hero h1{word-break:keep-all;overflow-wrap:break-word;text-wrap:balance;line-height:1.34!important}
+#story .story-heading p,#story .story-copy,#story .story-card p,.panel p{word-break:keep-all;overflow-wrap:break-word;line-break:strict;text-wrap:pretty}
+#story .story-card h3,.panel h2,.panel h3{word-break:keep-all;overflow-wrap:break-word;text-wrap:balance}
+#story .story-grid,#story .story-method{align-items:start}
+button,nav.tabs button,.panel,.story-card{transition:background-color .22s ease,color .22s ease,border-color .22s ease,box-shadow .24s ease,transform .24s ease!important}
+button:focus-visible,a:focus-visible{outline:3px solid #71a8f4!important;outline-offset:3px!important}
+@media(min-width:901px){
+ nav.tabs{padding:26px 12px 22px!important}
+ nav.tabs:before{display:none!important}
+ nav.tabs .site-brand{color:#fff!important;padding:10px 10px 2px!important;margin:0 2px!important;font-size:20px!important;font-weight:800!important;line-height:1.2!important;flex-wrap:wrap!important}
+ nav.tabs .site-brand-sub{width:100%;padding-left:19px;color:#a9c3e7!important}
+ nav.tabs button:hover{transform:translateX(3px)}
+}
+@media(max-width:900px){
+ nav.tabs{align-items:center!important}
+ nav.tabs .site-brand{flex:0 0 auto!important;margin-right:10px!important;padding:5px 8px!important;font-size:16px!important;font-weight:800!important;color:#173f7c!important}
+ nav.tabs .site-brand-sub{display:none!important}
+ nav.tabs .sidebar-divider{width:1px;height:22px;background:#cdd8e7;margin:0 5px!important}
+}
+@media(max-width:600px){nav.tabs .site-brand{font-size:14px!important}nav.tabs button{padding:9px 10px!important}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style></head><body><main class="wrap"><div class="top"><span class="pill" id="datasetBadge">평가계수 데이터 로딩 중</span><select id="theme" class="hidden" aria-label="고정 테마"><option value="navy" selected>Carbon Navy</option></select></div><nav class="tabs" aria-label="주요 분석 메뉴"><a class="site-brand" href="#story" aria-label="Looply 분석 리포트 첫 화면으로 이동"><span class="brand-dot"></span><span>Looply</span><span class="site-brand-sub">LCA 데이터 분석</span></a><div class="sidebar-divider" aria-hidden="true"></div><button data-tab="story" class="active">분석 리포트</button><button data-tab="calc">환경영향 계산</button><button data-tab="explore">데이터 인사이트</button><button data-tab="cluster">군집 분석</button></nav>
 
 <section id="story" aria-label="환경영향 데이터 분석 리포트"><div class="story-nav" aria-label="리포트 키보드 및 버튼 탐색"><button id="storyPrev" type="button" title="이전 장 (↑)">↑ <span>이전</span></button><span class="story-nav-label">REPORT</span><button id="storyNext" type="button" title="다음 장 (↓)">↓ <span>다음</span></button><span class="story-nav-hint">← → 분석 메뉴 이동</span></div>
 <div class="story-hero">
