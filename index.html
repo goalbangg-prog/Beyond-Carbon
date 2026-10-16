@@ -391,9 +391,25 @@ button:focus-visible,a:focus-visible{outline:3px solid #71a8f4!important;outline
   overflow-wrap:break-word!important;font-size:14px!important;line-height:1.85!important;
  }
 }
+
+/* AI MVP: optional server-backed interpretation, with verified offline copy */
+.ai-insight-panel{background:#fff;border:1px solid #d7e4f2;border-radius:18px;padding:clamp(20px,3vw,36px);margin:20px 0 32px;box-shadow:0 12px 34px #1027470b}
+.ai-insight-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.ai-eyebrow{font-size:11px;font-weight:800;color:#2363b0;letter-spacing:.08em}
+.ai-insight-panel h2{font-size:clamp(21px,2.2vw,30px);margin:7px 0;line-height:1.45;word-break:keep-all}
+.ai-insight-heading p{color:#526983;margin:0 0 14px;word-break:keep-all}
+.ai-insight-actions{display:flex;gap:8px;flex-wrap:wrap}
+.ai-insight-actions button{font-size:13px;background:#e8f0fc;color:#173e7d;border:1px solid #cbdcf4}
+.ai-insight-actions button:hover,.ai-insight-actions button.active{background:#205ca8;color:white}
+.ai-insight-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
+.ai-insight-grid article{background:#f3f7fc;border-radius:12px;padding:17px;min-width:0}
+.ai-insight-grid h3{font-size:15px;margin:0 0 10px;word-break:keep-all}
+.ai-insight-grid p{font-size:14px;line-height:1.85;margin:0;word-break:keep-all;overflow-wrap:break-word}
+.ai-insight-status{font-size:12px;color:#60748d;margin:14px 0 0}
+@media(max-width:850px){.ai-insight-grid{grid-template-columns:1fr}}
 </style></head><body><main class="wrap"><div class="top"><span class="pill" id="datasetBadge">평가계수 데이터 로딩 중</span><select id="theme" class="hidden" aria-label="고정 테마"><option value="navy" selected>Carbon Navy</option></select></div><nav class="tabs" aria-label="주요 분석 메뉴"><a class="site-brand" href="#story" aria-label="Looply 분석 리포트 첫 화면으로 이동"><span class="brand-dot"></span><span>Looply</span><span class="site-brand-sub">LCA 데이터 분석</span></a><div class="sidebar-divider" aria-hidden="true"></div><button data-tab="story" class="active">분석 리포트</button><button data-tab="calc">환경영향 계산</button><button data-tab="explore">데이터 인사이트</button><button data-tab="cluster">군집 분석</button></nav>
 
-<section id="story" aria-label="환경영향 데이터 분석 리포트"><div class="story-nav" aria-label="리포트 키보드 및 버튼 탐색"><button id="storyPrev" type="button" title="이전 장 (↑)">↑ <span>이전</span></button><span class="story-nav-label">REPORT</span><button id="storyNext" type="button" title="다음 장 (↓)">↓ <span>다음</span></button><span class="story-nav-hint">← → 분석 메뉴 이동</span></div>
+<section id="story" aria-label="환경영향 데이터 분석 리포트"><section class="ai-insight-panel" aria-label="AI 환경 데이터 해설"><div class="ai-insight-heading"><div><span class="ai-eyebrow">LOOPLY AI · 쉬운 데이터 이야기</span><h2>숫자 속에 어떤 이야기가 숨어 있을까요?</h2><p>환경영향계수 398개를 바탕으로 중요한 발견을 쉬운 말로 설명합니다.</p></div><div class="ai-insight-actions"><button type="button" data-ai-topic="coverage">데이터 살펴보기</button><button type="button" data-ai-topic="cement">시멘트 비교하기</button></div></div><div class="ai-insight-grid"><article><h3>🔎 무엇을 발견했나요?</h3><p id="aiFinding">398개 평가계수 중 원료 및 에너지 생산 단계에 198개가 포함되어 있어요. 자료의 절반 가까이가 이 단계에 해당합니다.</p></article><article><h3>💡 어떤 의미일까요?</h3><p id="aiMeaning">이 자료는 모든 환경영향을 똑같이 다루는 목록이 아니에요. 어떤 단계에 데이터가 많이 모여 있는지부터 확인하면 차트를 더 정확하게 읽을 수 있어요.</p></article><article><h3>⚠️ 무엇을 주의할까요?</h3><p id="aiCaution">자료가 많다고 환경영향이 크다는 뜻은 아니에요. 서로 다른 기준 단위의 계수를 직접 비교해서도 안 됩니다.</p></article></div><p class="ai-insight-status" id="aiStatus" role="status">검증된 데이터 기반 기본 해설 · AI 서버 연결 시 새 해설 생성 가능</p></section><div class="story-nav" aria-label="리포트 키보드 및 버튼 탐색"><button id="storyPrev" type="button" title="이전 장 (↑)">↑ <span>이전</span></button><span class="story-nav-label">REPORT</span><button id="storyNext" type="button" title="다음 장 (↓)">↓ <span>다음</span></button><span class="story-nav-hint">← → 분석 메뉴 이동</span></div>
 <div class="story-hero">
  <div class="eyebrow">LOOPLY · LCA DATA ANALYTICS</div>
  <h1>환경영향 데이터를<br><span class="hero-highlight">쉽게 읽고, 깊게 분석하다.</span></h1>
@@ -744,4 +760,29 @@ report?.querySelectorAll('.story-hero,.story-section').forEach(el=>{
  el.classList.add('visible');
 });
 })();
+
+/* Optional AI interpretation: never expose a secret in client-side code. */
+const aiCopy={
+ coverage:{finding:'398개 평가계수 중 원료 및 에너지 생산 단계에 198개가 포함되어 있어요. 자료의 절반 가까이가 이 단계에 해당합니다.',meaning:'이 자료는 모든 환경영향을 똑같이 다루는 목록이 아니에요. 어떤 단계에 데이터가 많이 모여 있는지부터 확인하면 차트를 더 정확하게 읽을 수 있어요.',caution:'자료가 많다고 환경영향이 크다는 뜻은 아니에요. 서로 다른 기준 단위의 계수를 직접 비교해서도 안 됩니다.'},
+ cement:{finding:'같은 1kg 기준에서 1종 포틀랜드 시멘트의 탄소발자국 계수는 약 0.926, 고로 슬래그 시멘트는 약 0.504로 나타났어요.',meaning:'이 자료에서 고로 슬래그 시멘트의 계수는 약 46% 낮아요. 같은 기준 단위에서도 재료 종류에 따라 결과가 달라질 수 있어요.',caution:'이 수치만으로 어떤 시멘트가 모든 용도에서 더 친환경적이라고 결론 낼 수 없어요. 성능과 실제 사용량도 고려해야 합니다.'}
+};
+const aiEndpoint=window.LOOPLY_AI_API_URL||'';
+async function showAi(topic){
+ const copy=aiCopy[topic];if(!copy)return;
+ const set=insight=>{for(const [k,id] of [['finding','aiFinding'],['meaning','aiMeaning'],['caution','aiCaution']])document.getElementById(id).textContent=insight[k];};
+ set(copy);
+ document.querySelectorAll('[data-ai-topic]').forEach(b=>b.classList.toggle('active',b.dataset.aiTopic===topic));
+ const status=document.getElementById('aiStatus');
+ if(!aiEndpoint){status.textContent='검증된 데이터 기반 기본 해설 · AI 서버 연결 전';return;}
+ status.textContent='AI가 분석 결과를 쉽게 풀어쓰는 중입니다…';
+ try{
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),16000);
+  let res;try{res=await fetch(aiEndpoint.replace(/\/$/,'')+'/api/insights',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic}),signal:controller.signal})}finally{clearTimeout(timer)}
+  if(!res.ok)throw Error('AI server error');
+  const data=await res.json();
+  if(!data.insight||!['finding','meaning','caution'].every(k=>typeof data.insight[k]==='string'))throw Error('Invalid response');
+  set(data.insight);status.textContent='AI 해설 · 검증된 통계값 기반 · 생성형 AI 응답';
+ }catch(err){set(copy);status.textContent='AI 연결이 원활하지 않아 검증된 기본 해설을 표시합니다.'}
+}
+document.querySelectorAll('[data-ai-topic]').forEach(b=>b.addEventListener('click',()=>showAi(b.dataset.aiTopic)));
 </script></body></html>
