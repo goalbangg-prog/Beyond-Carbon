@@ -60,6 +60,25 @@ async function runAdvancedInsight(kind){
   const current=kind==='explore'?JSON.stringify({stage:$('exStage')?.value,unit:$('exUnit')?.value,impact_x:impacts.indexOf($('exImpact')?.value),impact_y:impacts.indexOf($('exImpact2')?.value)}):JSON.stringify({stage:($('clusterScope')?.value||'').split('|||')[0],unit:($('clusterScope')?.value||'').split('|||')[1],impacts:[...document.querySelectorAll('[data-cl]:checked')].map(el=>Number(el.value)),k:Number($('clusterK')?.value)});
   if(current!==signature)return;
   const profiles=kind==='cluster'?(result.facts?.profiles||[]).map(p=>p.cluster+'번 군집('+p.size+'개): '+p.distinguishing_impact+' '+p.direction+' · 예시 '+p.examples.join(', ')).join(' / '):'';
+  if(kind==='cluster'&&result.facts?.profiles){
+   const root=$('clusterResult');
+   root.replaceChildren();
+   const header=document.createElement('p');header.textContent='Python KMeans · 유효 '+result.facts.valid+'/'+result.facts.total+' · 실루엣 '+result.facts.silhouette;root.append(header);
+   const grid=document.createElement('div');grid.className='grid three';
+   for(const p of result.facts.profiles){
+    const card=document.createElement('div');card.className='metric';
+    const title=document.createElement('strong');title.textContent=p.cluster+'번 군집 · '+p.size+'개';card.append(title);
+    const info=document.createElement('p');info.textContent=p.distinguishing_impact+' '+p.direction+' (중심값 '+p.standardized_center+')';card.append(info);
+    const examples=document.createElement('small');examples.textContent=p.examples.join(', ');card.append(examples);grid.append(card);
+   }
+   root.append(grid);
+  }
+  if(kind==='explore'){
+   const root=$('exploreResult'),old=root.querySelector('[data-correlation]');
+   if(old)old.remove();
+   const summary=document.createElement('p');summary.dataset.correlation='true';
+   summary.textContent='Python Spearman ρ: '+result.facts.rho+' · 쌍별 유효 표본 '+result.facts.paired+'/'+result.facts.total;root.prepend(summary);
+  }
   panel.text.textContent=[result.finding,profiles,result.meaning,result.caution].filter(Boolean).join(' ');
   panel.status.textContent=(result.generation==='ai'?'Python 통계 + AI 해석':'Python 통계 + 검증된 기본 해석')+' · 서버 재계산 기준'+(kind==='cluster'?' · 브라우저 군집과 별도 실행':'');
  }catch(e){if(seq!==advancedRequest)return;panel.status.textContent='통계 분석 API 연결 실패 · 기본 설명 유지';panel.text.textContent=describe(kind);}
