@@ -196,3 +196,45 @@ def calculation_insight(req: CalculationInsightRequest, request: Request):
         AI_CACHE[cache_key] = result
     return result
 
+
+# Reproducible descriptive statistics, independent of model output.
+from statistics import median
+
+class StatisticalInsightRequest(BaseModel):
+    stage: str = Field(min_length=1, max_length=100)
+    unit: str = Field(min_length=1, max_length=32)
+    impact: int = Field(ge=0, le=4)
+
+@app.post("/api/statistical-insight")
+def statistical_insight(req: StatisticalInsightRequest):
+    scope = [r for r in FACTOR_ROWS if r["대분류"] == req.stage and r["단위"] == req.unit]
+    if not scope:
+        raise HTTPException(422, "선택한 범위에 데이터가 없습니다.")
+    col = IMPACT_COLUMNS[req.impact]
+    valid = sorted(float(r[col]) for r in scope if r[col].strip() and math.isfinite(float(r[col])))
+    missing = len(scope) - len(valid)
+    if not valid:
+        return {"finding": "이 범위에는 계산 가능한 계수가 없습니다.", "meaning": "결측 패턴을 먼저 확인해야 합니다.", "caution": "빈 값을 0으로 취급할 수 없습니다.", "facts": {"total":len(scope),"valid":0,"missing":missing}, "generation":"statistical"}
+    def percentile(p):
+        position = (len(valid)-1)*p
+        lo = math.floor(position)
+        hi = math.ceil(position)
+        return valid[lo] + (valid[hi]-valid[lo])*(position-lo)
+    q1,q3 = percentile(.25),percentile(.75)
+    iqr = q3-q1
+    outliers = sum(x < q1-1.5*iqr or x > q3+1.5*iqr for x in valid) if iqr else 0
+    med = median(valid)
+    coverage = 100*len(valid)/len(scope)
+    finding = (f"{req.stage} / {req.unit}에서 {IMPACT_NAMES[req.impact]} 계수가 있는 항목은 "
+               f"{len(valid)}/{len(scope)}개({coverage:.1f}%)입니다. 중앙값은 {med:.5g}, "
+               f"사분위범위는 {q1:.5g}~{q3:.5g}이며, IQR 기준 이상치는 {outliers}개입니다.")
+    if missing:
+        meaning = f"전체 {len(scope)}개 중 {missing}개는 이 영향범주의 값이 비어 있습니다. 유효한 항목의 분포와 결측된 항목을 나누어 살펴보는 것이 좋습니다."
+    elif outliers:
+        meaning = "일부 항목이 일반적인 분포 범위에서 벗어납니다. 원자료와 단위를 확인해 특이값인지 검토할 수 있습니다."
+    else:
+        meaning = "선택한 범위에서는 IQR 기준 이상치가 발견되지 않았습니다. 분포의 치우침 여부는 그래프와 함께 확인하세요."
+    return {"finding":finding,"meaning":meaning,
+            "caution":"이상치는 오류나 환경적 우열을 뜻하지 않습니다. 동일 단위의 계수 분포만 비교한 결과이며 제품 LCA가 아닙니다.",
+            "facts":{"total":len(scope),"valid":len(valid),"missing":missing,"median":med,"q1":q1,"q3":q3,"outliers":outliers},
+            "generation":"statistical"}
