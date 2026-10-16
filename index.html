@@ -240,6 +240,17 @@ button:active{transform:scale(.98)}
 #story .story-metric{padding:18px 22px}
 @media(max-width:850px){#story .story-section{padding:22px 0 45px}#story .story-chart{min-height:320px}#story .story-hero{min-height:460px}}
 @media(max-width:550px){#story .story-hero{min-height:440px}#story .story-section{padding:18px 0 35px}}
+
+/* V3.9: predictable reading increments; compact hero with true image support */
+#story .story-hero{min-height:clamp(410px,70svh,580px);padding:clamp(24px,4vw,54px);justify-content:center}
+#story .story-hero h1{font-size:clamp(36px,5.3vw,76px);line-height:1.18;max-width:960px;margin:10px 0 18px}
+#story .story-hero>p{font-size:clamp(15px,1.45vw,19px);line-height:1.75;max-width:800px}
+#story .story-hero .story-scroll{margin-top:22px}
+#story .story-hero-art{background-image:url('./looply-lifecycle.jpg');background-position:center;background-size:cover}
+#story .story-hero:before{background:linear-gradient(90deg,rgba(7,19,38,.92) 0%,rgba(7,19,38,.73) 43%,rgba(7,19,38,.18) 100%)}
+#story .story-section{scroll-margin-top:24px}
+html{scroll-padding-top:24px}
+@media(max-width:650px){#story .story-hero{min-height:450px}#story .story-hero:before{background:linear-gradient(0deg,#071326e8 0%,#071326a8 65%,#07132666 100%)}}
 </style></head><body><header class="site-header"><a class="site-brand" href="#story" aria-label="Looply 분석 리포트 첫 화면으로 이동"><span class="brand-dot"></span><span>Looply</span><span class="site-brand-sub">LCA 데이터 분석</span></a></header><main class="wrap"><div class="top"><span class="pill" id="datasetBadge">평가계수 데이터 로딩 중</span><select id="theme" class="hidden" aria-label="고정 테마"><option value="navy" selected>Carbon Navy</option></select></div><nav class="tabs"><button data-tab="story" class="active">분석 리포트</button><button data-tab="calc">환경영향 계산</button><button data-tab="explore">데이터 인사이트</button><button data-tab="cluster">군집 분석</button></nav>
 
 <section id="story" aria-label="환경영향 데이터 분석 리포트"><div class="story-nav" aria-label="리포트 키보드 및 버튼 탐색"><button id="storyPrev" type="button" title="이전 장 (↑)">↑ <span>이전</span></button><span class="story-nav-label">REPORT</span><button id="storyNext" type="button" title="다음 장 (↓)">↓ <span>다음</span></button><span class="story-nav-hint">← → 분석 메뉴 이동</span></div>
@@ -563,37 +574,20 @@ byId('exImpact')?.addEventListener('change',()=>{refreshScope();window.enhancedE
 document.querySelector('[data-tab="explore"]')?.addEventListener('click',()=>setTimeout(()=>{refreshScope();window.enhancedExplore?.()},0));
 refreshScope();
 const sections=['story','story-data','story-distribution','story-relationship','story-clustering','story-try','story-methodology'].map(byId).filter(Boolean);
+let keyboardScrollLock=false;
 function move(delta){
- const visible=sections.filter(el=>el.getClientRects().length);
- if(!visible.length)return;
- const viewTop=window.scrollY+88;
- const viewBottom=window.scrollY+window.innerHeight-28;
- const tolerance=18;
- const current=visible.findIndex(el=>{const top=el.getBoundingClientRect().top+window.scrollY;const bottom=el.getBoundingClientRect().bottom+window.scrollY;return top<=viewTop+tolerance&&bottom>=viewBottom-tolerance});
- let target;
- if(delta>0){
-   const section=current>=0?visible[current]:visible.find(el=>el.getBoundingClientRect().bottom>100);
-   if(!section)return;
-   const bottom=section.getBoundingClientRect().bottom+window.scrollY;
-   if(bottom>viewBottom+tolerance){
-     target=Math.min(window.scrollY+Math.max(260,window.innerHeight*.78),bottom-window.innerHeight+35);
-   }else{
-     const index=visible.indexOf(section);target=visible[Math.min(index+1,visible.length-1)].getBoundingClientRect().top+window.scrollY-84;
-   }
- }else{
-   const section=current>=0?visible[current]:[...visible].reverse().find(el=>el.getBoundingClientRect().top<window.innerHeight-100);
-   if(!section)return;
-   const top=section.getBoundingClientRect().top+window.scrollY-84;
-   if(top<window.scrollY-tolerance){target=Math.max(window.scrollY-Math.max(260,window.innerHeight*.78),top)}
-   else{const index=visible.indexOf(section);target=visible[Math.max(index-1,0)].getBoundingClientRect().top+window.scrollY-84}
- }
- window.scrollTo({top:Math.max(0,target),behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
+ const page=Math.max(300,Math.floor(window.innerHeight*0.82));
+ const maxY=Math.max(0,document.documentElement.scrollHeight-window.innerHeight);
+ const next=Math.max(0,Math.min(maxY,Math.round(window.scrollY+delta*page)));
+ if(Math.abs(next-window.scrollY)<2)return;
+ window.scrollTo({top:next,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
 }
 byId('storyPrev')?.addEventListener('click',()=>move(-1));
 byId('storyNext')?.addEventListener('click',()=>move(1));
 document.addEventListener('keydown',e=>{
  if(!['ArrowDown','ArrowUp','PageDown','PageUp',' ','Home','End'].includes(e.key))return;
  if(e.ctrlKey||e.altKey||e.metaKey||e.shiftKey)return;
+ if(e.repeat)return;
  const target=e.target;if(target&&(/INPUT|TEXTAREA|SELECT|BUTTON|SUMMARY/.test(target.tagName)||target.isContentEditable||target.closest('details')))return;
  if(byId('story')?.classList.contains('hidden'))return;
  e.preventDefault();
