@@ -31,7 +31,7 @@ async function runStatisticalInsight(){
   const result=await response.json();
   if(sequence!==statsRequest||payload.stage!==$('exStage').value||payload.unit!==$('exUnit').value||payload.impact!==impacts.indexOf($('exImpact').value))return;
   panel.text.textContent=[result.finding,result.meaning,result.caution].join(' ');
-  panel.status.textContent='Python 기술통계 기반 발견 · AI가 생성한 내용 아님';
+  panel.status.textContent=result.generation==='ai'?'Python 검증 통계 + AI 해석 · 수치와 주의사항 고정':'Python 검증 통계 + 기본 해석 · AI 미사용 또는 안전 대체';
  }catch(_){if(sequence!==statsRequest)return;panel.status.textContent='통계 서버 연결 실패 · 화면 내 기본 해설 표시';panel.text.textContent=describe('explore');}
 }
 
@@ -71,7 +71,7 @@ function createPanel(anchor,key){
  const status=document.createElement('small');status.style.color='#66788a';status.textContent='현재 화면의 데이터로 계산한 설명 · AI 맞춤 생성 연동 준비 중';
  card.append(title,text,status);
  if(key==='explore'){
-  const button=document.createElement('button');button.type='button';button.textContent='현재 범위의 통계적 발견 보기';button.addEventListener('click',runStatisticalInsight);card.append(button);
+  const button=document.createElement('button');button.type='button';button.textContent='현재 범위의 통계 발견과 AI 해석 보기';button.addEventListener('click',runStatisticalInsight);card.append(button);
  }
  if(key==='calc'){
   const button=document.createElement('button');button.type='button';button.textContent='현재 계산 결과 AI 해설';button.addEventListener('click',runCalcAI);card.append(button);
