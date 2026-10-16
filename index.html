@@ -260,6 +260,28 @@ html{scroll-padding-top:24px}
 #story .story-heading h2{margin-top:12px}
 #story .story-grid,#story .story-metrics{overflow:visible}
 @media(max-width:700px){.tabs{overflow-x:auto;max-width:100%;scrollbar-width:thin}#story .story-nav{top:auto;bottom:12px}}
+
+/* V4.0: true report pagination; no scroll-jumps or overlapping fixed navigation */
+#story.report-paged>.story-hero,#story.report-paged>.story-section{display:none!important}
+#story.report-paged>.report-page-active{display:block!important;opacity:1!important;transform:none!important;visibility:visible!important}
+#story.report-paged>.story-hero.report-page-active{display:flex!important}
+#story.report-paged{position:relative;padding-bottom:12px}
+#story .report-pagination{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 20px;padding:12px 16px;border-radius:13px;border:1px solid #dce6f3;background:#fff;color:#29476d;font-size:12px;font-weight:700}
+#story .report-page-dots{display:flex;align-items:center;gap:7px}
+#story .report-page-dots button{width:11px;height:11px;min-width:11px;min-height:11px;padding:0;border:0;border-radius:50%;background:#c8d5e7;transition:background .2s,transform .2s}
+#story .report-page-dots button.selected{background:#205fae;transform:scale(1.25)}
+#story .report-page-dots button:hover{background:#6099df}
+#story .report-page-hint{color:#667b97;font-size:11px}
+#story .story-nav{position:static!important;transform:none!important;display:flex!important;flex-direction:row!important;width:auto!important;gap:8px!important;margin:0 0 16px!important;padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important}
+#story .story-nav button{width:auto!important;height:auto!important;padding:9px 14px!important;border-radius:9px!important;font-size:12px!important}
+#story .story-nav button span{display:inline!important;margin-left:5px}
+#story .story-nav button:disabled{opacity:.35;cursor:not-allowed}
+#story .story-nav-label{writing-mode:initial!important;transform:none!important;padding:10px 0!important;color:#607a9a!important}
+#story .story-nav:after{display:none!important}
+#story .story-nav-hint{display:none!important}
+#story .story-section.report-page-active{padding:12px 0 24px!important}
+#story .story-hero.report-page-active{margin-bottom:0!important}
+@media(max-width:650px){#story .report-pagination{gap:8px;padding:12px 10px;flex-wrap:wrap}#story .report-page-hint{display:none}#story .story-nav{margin-bottom:12px!important}}
 </style></head><body><header class="site-header"><a class="site-brand" href="#story" aria-label="Looply 분석 리포트 첫 화면으로 이동"><span class="brand-dot"></span><span>Looply</span><span class="site-brand-sub">LCA 데이터 분석</span></a></header><main class="wrap"><div class="top"><span class="pill" id="datasetBadge">평가계수 데이터 로딩 중</span><select id="theme" class="hidden" aria-label="고정 테마"><option value="navy" selected>Carbon Navy</option></select></div><nav class="tabs"><button data-tab="story" class="active">분석 리포트</button><button data-tab="calc">환경영향 계산</button><button data-tab="explore">데이터 인사이트</button><button data-tab="cluster">군집 분석</button></nav>
 
 <section id="story" aria-label="환경영향 데이터 분석 리포트"><div class="story-nav" aria-label="리포트 키보드 및 버튼 탐색"><button id="storyPrev" type="button" title="이전 장 (↑)">↑ <span>이전</span></button><span class="story-nav-label">REPORT</span><button id="storyNext" type="button" title="다음 장 (↓)">↓ <span>다음</span></button><span class="story-nav-hint">← → 분석 메뉴 이동</span></div>
@@ -582,28 +604,39 @@ byId('exUnit')?.addEventListener('change',()=>{refreshScope();window.enhancedExp
 byId('exImpact')?.addEventListener('change',()=>{refreshScope();window.enhancedExplore?.()});
 document.querySelector('[data-tab="explore"]')?.addEventListener('click',()=>setTimeout(()=>{refreshScope();window.enhancedExplore?.()},0));
 refreshScope();
-const sections=['story','story-data','story-distribution','story-relationship','story-clustering','story-try','story-methodology'].map(byId).filter(Boolean);
-let keyboardScrollLock=false;
-function move(delta){
- const page=Math.max(300,Math.floor(window.innerHeight*0.82));
- const maxY=Math.max(0,document.documentElement.scrollHeight-window.innerHeight);
- const next=Math.max(0,Math.min(maxY,Math.round(window.scrollY+delta*page)));
- if(Math.abs(next-window.scrollY)<2)return;
- window.scrollTo({top:next,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
+
+const report=byId('story');
+const pages=[report?.querySelector('.story-hero'),...['story-data','story-distribution','story-relationship','story-clustering','story-try','story-methodology'].map(byId)].filter(Boolean);
+let pageIndex=0;
+const pageNames=['소개','데이터 구성','계수 분포','상관관계','군집 특성','직접 분석','방법과 한계'];
+const counter=document.createElement('div');counter.className='report-pagination';counter.setAttribute('aria-label','분석 리포트 페이지 선택');
+counter.innerHTML='<span id="reportPageCount" aria-live="polite"></span><div class="report-page-dots">'+pages.map((_,i)=>'<button type="button" data-report-page="'+i+'" aria-label="'+(i+1)+'페이지 '+pageNames[i]+' 열기" title="'+pageNames[i]+'"></button>').join('')+'</div><span class="report-page-hint">↑ 이전 · ↓ 다음</span>';
+report?.insertBefore(counter,report.querySelector('.story-nav'));
+function showPage(index){
+ if(!report||report.classList.contains('hidden'))return;
+ pageIndex=Math.max(0,Math.min(pages.length-1,index));
+ pages.forEach((page,i)=>{page.classList.toggle('report-page-active',i===pageIndex);page.setAttribute('aria-hidden',String(i!==pageIndex));if(i===pageIndex)page.classList.add('visible')});
+ report.classList.add('report-paged');
+ const label=byId('reportPageCount');if(label)label.textContent=(pageIndex+1)+' / '+pages.length+' · '+pageNames[pageIndex];
+ counter.querySelectorAll('[data-report-page]').forEach((b,i)=>{b.classList.toggle('selected',i===pageIndex);b.setAttribute('aria-current',i===pageIndex?'page':'false')});
+ byId('storyPrev').disabled=pageIndex===0;
+ byId('storyNext').disabled=pageIndex===pages.length-1;
+ window.scrollTo({top:Math.max(0,report.getBoundingClientRect().top+window.scrollY-12),behavior:'instant'});
+ if(window.Plotly)requestAnimationFrame(()=>requestAnimationFrame(()=>{pages[pageIndex].querySelectorAll('.js-plotly-plot').forEach(el=>{try{Plotly.Plots.resize(el)}catch(e){}})}));
 }
-byId('storyPrev')?.addEventListener('click',()=>move(-1));
-byId('storyNext')?.addEventListener('click',()=>move(1));
+counter.querySelectorAll('[data-report-page]').forEach(b=>b.addEventListener('click',()=>showPage(Number(b.dataset.reportPage))));
+byId('storyPrev')?.addEventListener('click',()=>showPage(pageIndex-1));
+byId('storyNext')?.addEventListener('click',()=>showPage(pageIndex+1));
 document.addEventListener('keydown',e=>{
- if(!['ArrowDown','ArrowUp','PageDown','PageUp',' ','Home','End'].includes(e.key))return;
- if(e.ctrlKey||e.altKey||e.metaKey||e.shiftKey)return;
- if(e.repeat)return;
+ if(!['ArrowDown','ArrowUp','PageDown','PageUp','Home','End'].includes(e.key))return;
+ if(e.ctrlKey||e.altKey||e.metaKey||e.shiftKey||e.repeat)return;
  const target=e.target;if(target&&(/INPUT|TEXTAREA|SELECT|BUTTON|SUMMARY/.test(target.tagName)||target.isContentEditable||target.closest('details')))return;
- if(byId('story')?.classList.contains('hidden'))return;
+ if(report?.classList.contains('hidden'))return;
  e.preventDefault();
- if(e.key==='Home')window.scrollTo({top:0,behavior:'smooth'});
- else if(e.key==='End')window.scrollTo({top:document.documentElement.scrollHeight,behavior:'smooth'});
- else move(['ArrowUp','PageUp'].includes(e.key)?-1:1);
+ showPage(e.key==='Home'?0:e.key==='End'?pages.length-1:pageIndex+(['ArrowUp','PageUp'].includes(e.key)?-1:1));
 });
+document.querySelector('[data-tab="story"]')?.addEventListener('click',()=>setTimeout(()=>showPage(pageIndex),0));
+showPage(0);
 document.addEventListener('keydown',e=>{
  if(!['ArrowLeft','ArrowRight'].includes(e.key)||e.altKey||e.ctrlKey||e.metaKey)return;
  const target=e.target;if(target&&(/INPUT|SELECT|TEXTAREA|BUTTON/.test(target.tagName)||target.isContentEditable))return;
