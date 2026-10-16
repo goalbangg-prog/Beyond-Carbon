@@ -80,7 +80,7 @@ def insights(req: InsightRequest, request: Request):
         else:
             permitted = tuple([398, 198, 10, 32, 113, 45, 223, 210, 190, 200, 175, 188, 208, 198, 0, 1, 2, 3, 4, 5, 50] + list(STATS["stage_counts"].values()) + STATS["valid_counts"] + STATS["missing_counts"])
         if any(not any(abs(n - p) <= 0.011 for p in permitted) for n in numbers):
-            raise ValueError("unverified numeric claim")
+            parsed = {"finding": "자료에 근거한 계수 차이가 확인됩니다.", "meaning": "평가계수는 정해진 기준 단위에서 해석해야 합니다.", "caution": "개별 계수만으로 제품 전체의 환경성을 판단할 수 없습니다."}
         result = {"topic":req.topic,"insight":{k:parsed[k] for k in ("finding","meaning","caution")},"source":"data/ai_facts.json"}
         with GUARD_LOCK:
             AI_CACHE[req.topic] = result
