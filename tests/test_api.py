@@ -3,6 +3,7 @@ import unittest
 from pathlib import Path
 from fastapi.testclient import TestClient
 from api.main import app
+import api.main as api_module
 
 client = TestClient(app)
 facts = json.loads((Path(__file__).resolve().parents[1] / "data" / "ai_facts.json").read_text(encoding="utf-8"))
@@ -25,7 +26,7 @@ class TestApi(unittest.TestCase):
 
     def test_no_secret_error(self):
         from unittest.mock import patch
-        with patch.dict("os.environ", {"OPENAI_API_KEY": ""}):
+        with patch.dict("os.environ", {"OPENAI_API_KEY": ""}), patch.dict(api_module.AI_CACHE, {}, clear=True):
             response = client.post("/api/insights", json={"topic": "cement"})
             self.assertEqual(response.status_code, 503)
 
@@ -37,11 +38,14 @@ class TestApi(unittest.TestCase):
             "meaning": "재료에 따라 계산값이 달라집니다.",
             "caution": "동일한 기능인지 확인해야 합니다."
         }, ensure_ascii=False)
-        with patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}), patch("openai.OpenAI", return_value=mock):
+        with patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}), patch.dict(api_module.AI_CACHE, {}, clear=True), patch("openai.OpenAI", return_value=mock):
             response = client.post("/api/insights", json={"topic": "cement"})
             self.assertEqual(response.status_code, 200)
             self.assertIn("finding", response.json()["insight"])
             self.assertTrue(mock.chat.completions.create.called)
+            cached = client.post("/api/insights", json={"topic": "cement"})
+            self.assertEqual(cached.status_code, 200)
+            self.assertEqual(mock.chat.completions.create.call_count, 1)
 
 if __name__ == "__main__":
     unittest.main()
