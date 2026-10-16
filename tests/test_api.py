@@ -117,5 +117,35 @@ class TestApi(unittest.TestCase):
             response = client.post("/api/insights", json={"topic": "cement"})
             self.assertEqual(response.status_code, 503)
 
+    def test_calculation_insight_recomputes_cement(self):
+        from unittest.mock import patch
+        with patch.dict("os.environ", {"OPENAI_API_KEY": ""}):
+            response = client.post("/api/calculation-insight", json={
+                "impact": 0, "items": [{"id": 0, "quantity": 100}]
+            })
+        self.assertEqual(response.status_code, 200)
+        self.assertAlmostEqual(response.json()["facts"]["total"], 92.632613)
+        self.assertEqual(response.json()["generation"], "audited_fallback")
+
+    def test_calculation_rejects_invalid_ids_and_duplicates(self):
+        for items in ([{"id": 999, "quantity": 1}],
+                      [{"id": 0, "quantity": 1}, {"id": 0, "quantity": 2}],
+                      [{"id": 0, "quantity": -1}]):
+            response = client.post("/api/calculation-insight", json={"impact": 0, "items": items})
+            self.assertEqual(response.status_code, 422)
+
+    def test_calculation_ai_never_overrides_verified_facts(self):
+        from unittest.mock import MagicMock, patch
+        mock = MagicMock()
+        mock.chat.completions.create.return_value.choices[0].message.content = json.dumps({
+            "finding": "가짜 계산값 9999", "meaning": "선택한 재료의 기여량을 쉽게 읽을 수 있습니다.",
+            "caution": "문제없습니다."
+        }, ensure_ascii=False)
+        with patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}), patch.dict(api_module.AI_CACHE, {}, clear=True), patch("openai.OpenAI", return_value=mock):
+            response = client.post("/api/calculation-insight", json={"impact": 0, "items": [{"id": 0, "quantity": 2}]})
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("9999", json.dumps(response.json(), ensure_ascii=False))
+        self.assertAlmostEqual(response.json()["facts"]["total"], 1.85265226)
+
 if __name__ == "__main__":
     unittest.main()
