@@ -251,6 +251,15 @@ button:active{transform:scale(.98)}
 #story .story-section{scroll-margin-top:24px}
 html{scroll-padding-top:24px}
 @media(max-width:650px){#story .story-hero{min-height:450px}#story .story-hero:before{background:linear-gradient(0deg,#071326e8 0%,#071326a8 65%,#07132666 100%)}}
+
+/* V3.10 — remove the actual obstruction: sticky tabs overlapping report headings */
+.tabs{position:relative!important;top:auto!important;z-index:2!important;backdrop-filter:none!important;box-shadow:none!important;margin:14px 0 22px!important}
+#story .story-nav{position:fixed;right:10px;top:50%;z-index:10}
+#story .story-section{scroll-margin-top:24px!important}
+#story .story-heading{padding-top:10px}
+#story .story-heading h2{margin-top:12px}
+#story .story-grid,#story .story-metrics{overflow:visible}
+@media(max-width:700px){.tabs{overflow-x:auto;max-width:100%;scrollbar-width:thin}#story .story-nav{top:auto;bottom:12px}}
 </style></head><body><header class="site-header"><a class="site-brand" href="#story" aria-label="Looply 분석 리포트 첫 화면으로 이동"><span class="brand-dot"></span><span>Looply</span><span class="site-brand-sub">LCA 데이터 분석</span></a></header><main class="wrap"><div class="top"><span class="pill" id="datasetBadge">평가계수 데이터 로딩 중</span><select id="theme" class="hidden" aria-label="고정 테마"><option value="navy" selected>Carbon Navy</option></select></div><nav class="tabs"><button data-tab="story" class="active">분석 리포트</button><button data-tab="calc">환경영향 계산</button><button data-tab="explore">데이터 인사이트</button><button data-tab="cluster">군집 분석</button></nav>
 
 <section id="story" aria-label="환경영향 데이터 분석 리포트"><div class="story-nav" aria-label="리포트 키보드 및 버튼 탐색"><button id="storyPrev" type="button" title="이전 장 (↑)">↑ <span>이전</span></button><span class="story-nav-label">REPORT</span><button id="storyNext" type="button" title="다음 장 (↓)">↓ <span>다음</span></button><span class="story-nav-hint">← → 분석 메뉴 이동</span></div>
