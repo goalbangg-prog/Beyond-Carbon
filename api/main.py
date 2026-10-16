@@ -448,6 +448,7 @@ def cluster_insight(req: ClusterInsightRequest, request: Request):
             "caution":"군집 번호는 환경성 순위가 아닙니다. 로그 변환·표준화와 군집 수 선택에 따라 결과가 달라집니다. 브라우저 차트의 별도 KMeans 구현과 군집 번호가 일치하지 않을 수 있습니다.",
             "facts":{"total":len(scope),"valid":len(valid),"excluded":len(scope)-len(valid),
                      "k":req.k,"silhouette":silhouette,"profiles":profiles,
+                     "assignments":[{"name":name,"cluster":int(labels[i])+1,"values":values} for i,(name,values) in enumerate(valid)],
                      "impacts":[IMPACT_NAMES[j] for j in req.impacts],
                      "method":"scikit-learn KMeans(random_state=42,n_init=10), log10 + StandardScaler"},
             "generation":"statistical","source":"data/lca_factors_clean.csv"},req,request,"cluster")
