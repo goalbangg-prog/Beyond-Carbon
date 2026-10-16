@@ -35,7 +35,7 @@ async function runCalcAI(){
  panel.status.textContent='서버에서 계수를 재검증하고 AI 설명을 생성하는 중…';
  try{
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),22000);
-  let response;try{response=await fetch((window.LOOPLY_AI_API_URL||'https://looply-ai-api.onrender.com').replace(/\\/$/,'')+'/api/calculation-insight',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:controller.signal})}finally{clearTimeout(timer)}
+  let response;try{response=await fetch((window.LOOPLY_AI_API_URL||'https://looply-ai-api.onrender.com').replace(/[/]$/,'')+'/api/calculation-insight',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:controller.signal})}finally{clearTimeout(timer)}
   if(!response.ok)throw Error('HTTP '+response.status);
   const result=await response.json();
   if(sequence!==calcRequest||JSON.stringify(payload)!==JSON.stringify(calcPayload()))return;
