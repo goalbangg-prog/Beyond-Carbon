@@ -83,6 +83,12 @@ async function runAdvancedInsight(kind){
   panel.status.textContent=(result.generation==='ai'?'Python 통계 + AI 해석':'Python 통계 + 검증된 기본 해석')+' · 서버 재계산 기준'+(kind==='cluster'?' · 브라우저 군집과 별도 실행':'');
  }catch(e){if(seq!==advancedRequest)return;panel.status.textContent='통계 분석 API 연결 실패 · 기본 설명 유지';panel.text.textContent=describe(kind);}
 }
+window.addEventListener('looply:cluster-result',event=>{
+ const panel=panels.cluster;if(!panel)return;
+ const {result}=event.detail;
+ panel.text.textContent=[result.finding,result.meaning,result.caution].filter(Boolean).join(' ');
+ panel.status.textContent=(result.generation==='ai'?'Python 통계 + AI 해석':'Python 통계 + 기본 해석')+' · 차트/표/해설 동일 API 응답';
+});
 function calcPayload(){
  if(typeof calculations!=='function')return null;
  const combined=new Map();
@@ -119,7 +125,7 @@ function createPanel(anchor,key){
  const status=document.createElement('small');status.style.color='#66788a';status.textContent='현재 화면의 데이터로 계산한 설명 · AI 맞춤 생성 연동 준비 중';
  card.append(title,text,status);
  if(key==='cluster'){
-  const button=document.createElement('button');button.type='button';button.textContent='군집별 통계 발견과 AI 해석 보기';button.addEventListener('click',()=>runAdvancedInsight('cluster'));card.append(button);
+  const button=document.createElement('button');button.type='button';button.textContent='군집별 통계 발견과 AI 해석 보기';button.addEventListener('click',()=>window.enhancedCluster?.());card.append(button);
  }
  if(key==='explore'){
   const correlation=document.createElement('button');correlation.type='button';correlation.textContent='Spearman 상관관계와 AI 해석 보기';correlation.addEventListener('click',()=>runAdvancedInsight('explore'));card.append(correlation);
