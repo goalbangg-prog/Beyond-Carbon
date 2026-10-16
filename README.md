@@ -4,6 +4,8 @@
 
 **[웹앱 실행하기](https://goalbangg-prog.github.io/Looply-mini-LCA/)** · [데이터 전처리 노트북](notebooks/data_preprocessing.ipynb) · [개발 변경 이력](docs/CHANGELOG.md) · [검증 기록](docs/TEST_REPORT.md)
 
+> **배포 안내:** GitHub Pages의 `main`은 기존 안정 버전입니다. AI 기능은 `feature/ai-insights` 브랜치 및 별도 Render 미리보기에서 검증 중이며, 아직 `main`에 병합하지 않았습니다.
+
 ## 1. 프로젝트 개요
 
 | 구분 | 내용 |
@@ -46,7 +48,18 @@
 ### ④ 군집 분석
 양수·유효 평가계수를 로그 변환 및 표준화한 뒤 유사한 환경영향 특징을 묶어 탐색합니다. 군집 수(k)에 대한 실루엣 기반 추천, 군집별 특성, 대표 항목을 확인할 수 있도록 확장했습니다. **웹의 JavaScript KMeans 구현과 Python의 scikit-learn 구현은 초기화·동작이 달라 결과가 완전히 같다고 보장하지 않습니다.**
 
-## 3. 데이터와 해석 기준
+## 3. 일반인을 위한 AI 데이터 해설 (개발 브랜치)
+
+네 가지 화면에 쉬운 한국어 AI 해설을 제공합니다. 분석 리포트에서는 시멘트 평가계수 비교 및 데이터 분포를 설명하고, 환경영향 계산·데이터 인사이트·군집 분석 화면에서는 각각 계산 원리, 그래프 해석, 군집 분석의 의미와 한계를 안내합니다. **현재 AI 해설은 화면의 최신 입력값·차트 결과를 직접 읽는 맞춤형 분석 기능이 아니라 주제별 안내 기능**입니다.
+
+- **검증된 사실 우선:** 데이터에서 확인된 수치와 핵심 주의사항은 Python 코드(`api/insight_policy.py`)가 생성합니다.
+- **AI의 역할 제한:** OpenAI 모델은 주어진 사실에 대한 쉬운 한국어 설명(`meaning`)을 작성합니다. 허용되지 않는 숫자나 알려진 위험 표현이 있으면 사전 작성된 설명으로 대체합니다.
+- **출처 표시:** API는 `source`와 `generation`(`ai` / `audited_fallback`)을 반환합니다. `ai`는 모든 문장의 과학적 정확성을 보증하는 표시는 아닙니다.
+- **운영 보호:** 서버 측 API 키, 주제별 캐시, IP별 요청 제한, 프로세스별 생성 한도를 적용합니다. 캐시와 한도는 서버 프로세스 메모리 기반입니다.
+
+구현 구조, 오류 대응, 테스트 사례는 [AI 기술 문서](docs/AI_MVP.md)와 [포트폴리오 사례 연구](docs/PORTFOLIO_CASE_STUDY.md)에 정리했습니다.
+
+## 4. 데이터와 해석 기준
 
 **원자료 계보:** 한국환경산업기술원 환경성적표지 평가계수(2021-08-02 제공 자료) → Python/Pandas 정제 → `data/lca_factors_clean.csv` → `lca_data.js` → 브라우저 시각화.
 
@@ -60,7 +73,7 @@
 
 **중요:** 이 사이트의 산정은 등록한 개별 계수에 대한 *부분 계산*입니다. 시스템 경계, 기능단위, LCI 데이터, 배분, 대표성, 데이터 품질 검토가 빠진 상태에서 **ISO 14040/14044에 부합하는 완전한 LCA, PCF 또는 EPD 결과라고 주장할 수 없습니다.**
 
-## 4. 실행 방법
+## 5. 실행 방법
 
 ### 정적 웹앱(GitHub Pages)
 
@@ -87,7 +100,7 @@ streamlit run python/app.py
 
 Python 프로토타입은 정적 웹앱과 별도로 보존했습니다. 분석 라이브러리와 알고리즘이 부분적으로 다르므로 결과 비교 시 주의가 필요합니다.
 
-## 5. 저장소 구조
+## 6. 저장소 구조
 
 ```text
 Looply-mini-LCA/
@@ -96,20 +109,28 @@ Looply-mini-LCA/
 ├── looply-lifecycle.jpg           # 보고서 일러스트(배포 필수)
 ├── README.md                      # 프로젝트 소개
 ├── data/
-│   └── lca_factors_clean.csv      # 분석 재현용 정제 데이터
+│   ├── lca_factors_clean.csv      # 분석 재현용 정제 데이터
+│   └── ai_facts.json              # AI 해설에 쓰이는 검증 통계
 ├── notebooks/
 │   └── data_preprocessing.ipynb   # 데이터 전처리 실습
+├── api/
+│   ├── main.py                    # FastAPI 해설 API
+│   └── insight_policy.py          # 검증된 해설과 위험 표현 차단
+├── tests/
+│   └── test_api.py                # API 회귀 테스트
 ├── python/
 │   ├── app.py                     # Streamlit 초기 프로토타입
 │   └── requirements.txt
 └── docs/
     ├── CHANGELOG.md              # 버전별 세부 작업 기록
-    └── TEST_REPORT.md            # 수행된 검증과 미검증 항목
+    ├── TEST_REPORT.md            # 수행된 검증과 미검증 항목
+    ├── AI_MVP.md                  # AI 아키텍처 및 검증
+    └── PORTFOLIO_CASE_STUDY.md    # 취업용 사례 연구
 ```
 
 정적 배포 핵심 파일은 루트에 유지해 GitHub Pages 경로가 바뀌지 않도록 했습니다. 기존 중복 파일 `app.py`, `requirements.txt`, `lca_factors_clean.csv`(루트)를 제거하고, 미사용 로컬 `plotly.min.js`는 제거했습니다. 차트는 현재 `index.html`에 지정된 CDN에서 로드됩니다.
 
-## 6. 개발 과정에서 개선한 내용
+## 7. 개발 과정에서 개선한 내용
 
 1. Pandas/NumPy 전처리와 Python Streamlit 기반 시제품 구현
 2. GitHub Pages 배포 가능한 정적 HTML/JavaScript 앱 구현
@@ -120,7 +141,7 @@ Looply-mini-LCA/
 
 버전별 변경 내역과 검증 한계는 [CHANGELOG](docs/CHANGELOG.md) 및 [TEST_REPORT](docs/TEST_REPORT.md)를 참고해 주세요.
 
-## 7. 포트폴리오 관점에서 보여주는 역량
+## 8. 포트폴리오 관점에서 보여주는 역량
 
 **데이터 처리:** 결측값·타입·단위·비교 기준 검토, 데이터 표준화 및 분석용 구조화.  
 **분석 설계:** 로그 분포, 박스플롯, Spearman 상관, KMeans, 실루엣 검토 및 해석 한계 제시.  
@@ -129,9 +150,9 @@ Looply-mini-LCA/
 
 AI 도구를 개발 보조에 활용했습니다. 결과를 사용하거나 실무에 적용할 때는 데이터 출처 및 계산 정확성을 별도로 확인해야 합니다.
 
-## 8. 검증 상태
+## 9. 검증 상태
 
-기존에 남겨진 정적/브라우저 검증 기록은 [검증 기록](docs/TEST_REPORT.md)에 보존했습니다. **새 저장소 배포 URL에서의 전체 회귀 테스트, 모바일 실기기 테스트, 모든 단위 조합 수치 검증은 수행 완료로 표기하지 않습니다.**
+기존에 남겨진 정적/브라우저 검증 기록은 [검증 기록](docs/TEST_REPORT.md)에 보존했습니다. **AI 브랜치 GitHub Actions Python 테스트 12개 통과(커밋 `8a43ac0`, 2026-10-16 제공 로그).** 사용자가 최신 Render 배포 및 네 화면 AI 해설·기존 차트 정상 작동을 확인했습니다. 다만 모바일 실기기 테스트, 모든 단위 조합의 수치 검증, AI 해설의 완전한 의미 검증은 수행 완료로 표기하지 않습니다.
 
 ---
 
