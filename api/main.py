@@ -285,3 +285,121 @@ def statistical_insight(req: StatisticalInsightRequest, request: Request):
     with GUARD_LOCK:
         AI_CACHE[cache_key] = base
     return base
+
+
+# Correlation and clustering: independently computed server-side, never inferred from the chart.
+class CorrelationInsightRequest(BaseModel):
+    stage: str = Field(min_length=1, max_length=100)
+    unit: str = Field(min_length=1, max_length=32)
+    impact_x: int = Field(ge=0, le=4)
+    impact_y: int = Field(ge=0, le=4)
+
+def _ranks(values):
+    order = sorted(range(len(values)), key=lambda i: values[i])
+    ranks = [0.0] * len(values)
+    start = 0
+    while start < len(order):
+        end = start + 1
+        while end < len(order) and values[order[end]] == values[order[start]]:
+            end += 1
+        rank = (start + end - 1) / 2 + 1
+        for pos in range(start, end):
+            ranks[order[pos]] = rank
+        start = end
+    return ranks
+
+def _pearson(a, b):
+    n = len(a)
+    if n < 3:
+        return None
+    am, bm = sum(a) / n, sum(b) / n
+    numerator = sum((x-am)*(y-bm) for x,y in zip(a,b))
+    denominator = math.sqrt(sum((x-am)**2 for x in a)*sum((y-bm)**2 for y in b))
+    return numerator / denominator if denominator > 0 else None
+
+@app.post("/api/correlation-insight")
+def correlation_insight(req: CorrelationInsightRequest):
+    if req.impact_x == req.impact_y:
+        raise HTTPException(422, "서로 다른 영향범주를 선택하세요.")
+    scope = [r for r in FACTOR_ROWS if r["대분류"] == req.stage and r["단위"] == req.unit]
+    if not scope:
+        raise HTTPException(422, "분석 범위가 없습니다.")
+    xcol,ycol = IMPACT_COLUMNS[req.impact_x],IMPACT_COLUMNS[req.impact_y]
+    pairs = []
+    for row in scope:
+        try:
+            x,y = float(row[xcol]),float(row[ycol])
+            if math.isfinite(x) and math.isfinite(y):
+                pairs.append((x,y))
+        except (ValueError,TypeError):
+            continue
+    rho = _pearson(_ranks([p[0] for p in pairs]),_ranks([p[1] for p in pairs])) if len(pairs)>=3 else None
+    count = len(pairs)
+    if rho is None:
+        finding = f"전체 {len(scope)}개 중 두 영향범주를 함께 분석할 수 있는 항목은 {count}개입니다. 순위상관계수는 계산할 수 없습니다."
+        meaning = "함께 관측된 값이 너무 적거나 값이 모두 같을 수 있습니다. 분석 가능한 자료부터 확인하세요."
+    else:
+        direction = "함께 높아지는" if rho > 0.1 else "한쪽이 높을수록 다른 쪽은 낮아지는" if rho < -0.1 else "뚜렷한 단조 관계가 없는"
+        finding = (f"{IMPACT_NAMES[req.impact_x]}와 {IMPACT_NAMES[req.impact_y]}의 Spearman 순위상관계수는 "
+                   f"{rho:.3f}이며, 두 값이 모두 있는 {count}/{len(scope)}개 항목을 사용했습니다.")
+        meaning = f"선택한 항목들에서 두 계수의 순위가 {direction} 경향을 보입니다. 개별 항목과 특이값을 산점도로 함께 살펴보세요."
+    return {"finding":finding,"meaning":meaning,
+            "caution":"상관관계는 원인이나 제품의 환경적 우열을 증명하지 않습니다. 결측을 제외한 표본과 동일한 기준 단위 안에서만 해석하세요.",
+            "facts":{"total":len(scope),"paired":count,"excluded":len(scope)-count,"rho":rho,
+                     "impact_x":IMPACT_NAMES[req.impact_x],"impact_y":IMPACT_NAMES[req.impact_y]},
+            "generation":"statistical","source":"data/lca_factors_clean.csv"}
+
+class ClusterInsightRequest(BaseModel):
+    stage: str = Field(min_length=1, max_length=100)
+    unit: str = Field(min_length=1, max_length=32)
+    impacts: list[int] = Field(min_length=2, max_length=5)
+    k: int = Field(ge=2, le=6)
+
+@app.post("/api/cluster-insight")
+def cluster_insight(req: ClusterInsightRequest):
+    if len(set(req.impacts)) != len(req.impacts) or any(j not in range(5) for j in req.impacts):
+        raise HTTPException(422, "중복되거나 잘못된 영향범주입니다.")
+    scope = [r for r in FACTOR_ROWS if r["대분류"] == req.stage and r["단위"] == req.unit]
+    if not scope:
+        raise HTTPException(422, "분석 범위가 없습니다.")
+    valid = []
+    for row in scope:
+        try:
+            values = [float(row[IMPACT_COLUMNS[j]]) for j in req.impacts]
+            if all(math.isfinite(x) and x>0 for x in values):
+                valid.append((row["원료_에너지"],values))
+        except (ValueError,TypeError):
+            continue
+    if len(valid) < max(12,req.k*4):
+        raise HTTPException(422, "군집 분석을 위한 유효 표본이 부족합니다.")
+    import numpy as np
+    from sklearn.cluster import KMeans
+    from sklearn.metrics import silhouette_score
+    from sklearn.preprocessing import StandardScaler
+    X = StandardScaler().fit_transform(np.log10(np.asarray([x[1] for x in valid],dtype=float)))
+    model = KMeans(n_clusters=req.k,random_state=42,n_init=10)
+    labels = model.fit_predict(X)
+    counts = [int(np.sum(labels==i)) for i in range(req.k)]
+    silhouette = float(silhouette_score(X,labels)) if len(set(labels))>1 and max(counts)<len(valid) else None
+    profiles = []
+    for i in range(req.k):
+        members = np.flatnonzero(labels==i)
+        center = model.cluster_centers_[i]
+        distinguishing = int(np.argmax(np.abs(center)))
+        profiles.append({"cluster":i+1,"size":len(members),
+                         "distinguishing_impact":IMPACT_NAMES[req.impacts[distinguishing]],
+                         "direction":"상대적으로 높음" if center[distinguishing]>0 else "상대적으로 낮음",
+                         "standardized_center":round(float(center[distinguishing]),3),
+                         "examples":[valid[int(j)][0] for j in members[:3]]})
+    biggest = max(profiles,key=lambda x:x["size"])
+    finding = (f"동일한 {req.unit} 기준의 유효 계수 {len(valid)}/{len(scope)}개를 "
+               f"{req.k}개 군집으로 나눴습니다. 가장 큰 군집은 {biggest['cluster']}번({biggest['size']}개)입니다. "
+               + (f"평균 실루엣 점수는 {silhouette:.3f}입니다." if silhouette is not None else "실루엣 점수는 계산할 수 없습니다."))
+    meaning = "각 군집에서 두드러지는 영향범주와 대표 항목을 비교해 원자료를 추가 탐색할 수 있습니다. 군집 크기와 분리도를 함께 확인하세요."
+    return {"finding":finding,"meaning":meaning,
+            "caution":"군집 번호는 환경성 순위가 아닙니다. 로그 변환·표준화와 군집 수 선택에 따라 결과가 달라집니다. 브라우저 차트의 별도 KMeans 구현과 군집 번호가 일치하지 않을 수 있습니다.",
+            "facts":{"total":len(scope),"valid":len(valid),"excluded":len(scope)-len(valid),
+                     "k":req.k,"silhouette":silhouette,"profiles":profiles,
+                     "impacts":[IMPACT_NAMES[j] for j in req.impacts],
+                     "method":"scikit-learn KMeans(random_state=42,n_init=10), log10 + StandardScaler"},
+            "generation":"statistical","source":"data/lca_factors_clean.csv"}
