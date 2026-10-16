@@ -1,5 +1,6 @@
 """Looply AI insights API. Run: uvicorn api.main:app --reload"""
 import json
+import logging
 import os
 import time
 from collections import defaultdict, deque
@@ -8,6 +9,8 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger("looply.ai")
 
 app = FastAPI(title="Looply AI Insights", version="0.1.0")
 allowed = [x.strip() for x in os.getenv("LOOPLY_ALLOWED_ORIGINS", "http://localhost:8000,https://goalbangg-prog.github.io").split(",") if x.strip()]
@@ -73,7 +76,7 @@ def insights(req: InsightRequest, request: Request):
         text_blob = " ".join(parsed[k] for k in ("finding", "meaning", "caution"))
         numbers = [float(x) for x in re.findall(r"(?<![\w.])\d+(?:\.\d+)?", text_blob)]
         if req.topic == "cement":
-            permitted = (1, 0.92632613, 0.503655563, 45.63, 45.64, 46, 0.93, 0.926, 0.50, 0.5, 0.504, 0.5037, 0.98)
+            permitted = (1, 0.92632613, 0.503655563, 45.63, 45.64, 45.6, 45.7, 45, 46, 0.9, 0.92, 0.93, 0.926, 0.9263, 0.50, 0.5, 0.503, 0.504, 0.5037, 0.50366)
         else:
             permitted = tuple([398, 198, 10, 32, 113, 45, 223, 210, 190, 200, 175, 188, 208, 198, 0, 1, 2, 3, 4, 5, 50] + list(STATS["stage_counts"].values()) + STATS["valid_counts"] + STATS["missing_counts"])
         if any(not any(abs(n - p) <= 0.011 for p in permitted) for n in numbers):
@@ -83,4 +86,5 @@ def insights(req: InsightRequest, request: Request):
             AI_CACHE[req.topic] = result
         return result
     except Exception as exc:
+        logger.warning("AI insight rejected: topic=%s error_type=%s reason=%s", req.topic, type(exc).__name__, "numeric_validation" if isinstance(exc, ValueError) and str(exc) == "unverified numeric claim" else "response_or_provider_error")
         raise HTTPException(502, "AI 해설을 생성하지 못했습니다. 잠시 후 다시 시도해 주세요.") from exc
