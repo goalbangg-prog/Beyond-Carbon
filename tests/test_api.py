@@ -163,5 +163,37 @@ class TestApi(unittest.TestCase):
         })
         self.assertEqual(response.status_code, 422)
 
+    def test_statistical_ai_keeps_verified_numbers(self):
+        from unittest.mock import MagicMock, patch
+        mock = MagicMock()
+        mock.chat.completions.create.return_value.choices[0].message.content = json.dumps({
+            "meaning": "값이 특히 큰 항목은 원자료와 기준 단위를 먼저 살펴보면 좋습니다.",
+            "finding": "조작된 숫자 999999",
+            "caution": "모두 친환경입니다."
+        }, ensure_ascii=False)
+        payload = {"stage": "원료 및 에너지 생산", "unit": "kg", "impact": 0}
+        with patch.dict("os.environ", {"OPENAI_API_KEY": ""}), patch.dict(api_module.AI_CACHE, {}, clear=True):
+            baseline = client.post("/api/statistical-insight", json=payload).json()
+        with patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}), patch.dict(api_module.AI_CACHE, {}, clear=True), patch.object(api_module, "GENERATIONS", 0), patch.object(api_module, "MAX_GENERATIONS", 100), patch.object(api_module, "RATE_LIMIT", 100), patch("openai.OpenAI", return_value=mock):
+            response = client.post("/api/statistical-insight", json=payload)
+        self.assertEqual(response.status_code, 200)
+        result = response.json()
+        self.assertEqual(result["finding"], baseline["finding"])
+        self.assertEqual(result["caution"], baseline["caution"])
+        self.assertEqual(result["facts"], baseline["facts"])
+        self.assertNotIn("999999", json.dumps(result, ensure_ascii=False))
+
+    def test_statistical_ai_fallback_on_unsafe_claim(self):
+        from unittest.mock import MagicMock, patch
+        mock = MagicMock()
+        mock.chat.completions.create.return_value.choices[0].message.content = json.dumps({
+            "meaning": "이 데이터는 더 친환경적이어서 100% 좋은 결과입니다."
+        }, ensure_ascii=False)
+        payload = {"stage": "원료 및 에너지 생산", "unit": "kg", "impact": 0}
+        with patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}), patch.dict(api_module.AI_CACHE, {}, clear=True), patch.object(api_module, "GENERATIONS", 0), patch.object(api_module, "MAX_GENERATIONS", 100), patch.object(api_module, "RATE_LIMIT", 100), patch("openai.OpenAI", return_value=mock):
+            response = client.post("/api/statistical-insight", json=payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["generation"], "statistical")
+
 if __name__ == "__main__":
     unittest.main()
