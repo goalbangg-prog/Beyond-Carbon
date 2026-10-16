@@ -375,6 +375,22 @@ button:focus-visible,a:focus-visible{outline:3px solid #71a8f4!important;outline
  #story .story-heading>p,#story .story-copy,#story .story-note,#story .story-gloss,#story .story-card p,.panel p{overflow-wrap:break-word!important}
  #story .story-heading>p{max-width:100%!important}
 }
+
+/* V4.6 — use full card width for methodology text without splitting Korean words */
+#story .story-card:has(>h3 + details.method-details){width:100%;max-width:none!important;min-width:0}
+#story .story-card:has(>h3 + details.method-details) .method-details{width:100%;max-width:none!important}
+#story .story-card:has(>h3 + details.method-details) .method-details p{
+ display:block!important;width:100%!important;max-width:none!important;
+ margin:12px 0 16px!important;padding:0!important;
+ font-size:clamp(14px,1.08vw,16px)!important;line-height:1.9!important;
+ word-break:keep-all!important;overflow-wrap:normal!important;
+ line-break:strict!important;text-wrap:pretty!important;
+}
+@media(max-width:700px){
+ #story .story-card:has(>h3 + details.method-details) .method-details p{
+  overflow-wrap:break-word!important;font-size:14px!important;line-height:1.85!important;
+ }
+}
 </style></head><body><main class="wrap"><div class="top"><span class="pill" id="datasetBadge">평가계수 데이터 로딩 중</span><select id="theme" class="hidden" aria-label="고정 테마"><option value="navy" selected>Carbon Navy</option></select></div><nav class="tabs" aria-label="주요 분석 메뉴"><a class="site-brand" href="#story" aria-label="Looply 분석 리포트 첫 화면으로 이동"><span class="brand-dot"></span><span>Looply</span><span class="site-brand-sub">LCA 데이터 분석</span></a><div class="sidebar-divider" aria-hidden="true"></div><button data-tab="story" class="active">분석 리포트</button><button data-tab="calc">환경영향 계산</button><button data-tab="explore">데이터 인사이트</button><button data-tab="cluster">군집 분석</button></nav>
 
 <section id="story" aria-label="환경영향 데이터 분석 리포트"><div class="story-nav" aria-label="리포트 키보드 및 버튼 탐색"><button id="storyPrev" type="button" title="이전 장 (↑)">↑ <span>이전</span></button><span class="story-nav-label">REPORT</span><button id="storyNext" type="button" title="다음 장 (↓)">↓ <span>다음</span></button><span class="story-nav-hint">← → 분석 메뉴 이동</span></div>
