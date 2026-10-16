@@ -35,6 +35,35 @@ async function runStatisticalInsight(){
  }catch(_){if(sequence!==statsRequest)return;panel.status.textContent='통계 서버 연결 실패 · 화면 내 기본 해설 표시';panel.text.textContent=describe('explore');}
 }
 
+let advancedRequest=0;
+async function runAdvancedInsight(kind){
+ const panel=panels[kind];if(!panel)return;
+ let endpoint,payload;
+ if(kind==='explore'){
+  const x=impacts.indexOf($('exImpact')?.value),y=impacts.indexOf($('exImpact2')?.value);
+  if(x<0||y<0||x===y){panel.status.textContent='서로 다른 영향범주 두 개를 선택하세요.';return;}
+  endpoint='correlation-insight';payload={stage:$('exStage')?.value,unit:$('exUnit')?.value,impact_x:x,impact_y:y};
+ }else{
+  const scope=$('clusterScope')?.value||'',parts=scope.split('|||');
+  const selected=[...document.querySelectorAll('[data-cl]:checked')].map(el=>Number(el.value));
+  if(parts.length!==2||selected.length<2){panel.status.textContent='분석 범위와 영향범주 두 개 이상을 선택하세요.';return;}
+  endpoint='cluster-insight';payload={stage:parts[0],unit:parts[1],impacts:selected,k:Number($('clusterK')?.value)};
+ }
+ const seq=++advancedRequest;const signature=JSON.stringify(payload);
+ panel.status.textContent='Python 통계 재계산 및 AI 해석을 요청하는 중…';
+ try{
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),26000);
+  let response;try{response=await fetch(apiBase()+'/api/'+endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:signature,signal:controller.signal})}finally{clearTimeout(timer)}
+  if(!response.ok)throw Error('HTTP '+response.status);
+  const result=await response.json();
+  if(seq!==advancedRequest)return;
+  const current=kind==='explore'?JSON.stringify({stage:$('exStage')?.value,unit:$('exUnit')?.value,impact_x:impacts.indexOf($('exImpact')?.value),impact_y:impacts.indexOf($('exImpact2')?.value)}):JSON.stringify({stage:($('clusterScope')?.value||'').split('|||')[0],unit:($('clusterScope')?.value||'').split('|||')[1],impacts:[...document.querySelectorAll('[data-cl]:checked')].map(el=>Number(el.value)),k:Number($('clusterK')?.value)});
+  if(current!==signature)return;
+  const profiles=kind==='cluster'?(result.facts?.profiles||[]).map(p=>p.cluster+'번 군집('+p.size+'개): '+p.distinguishing_impact+' '+p.direction+' · 예시 '+p.examples.join(', ')).join(' / '):'';
+  panel.text.textContent=[result.finding,profiles,result.meaning,result.caution].filter(Boolean).join(' ');
+  panel.status.textContent=(result.generation==='ai'?'Python 통계 + AI 해석':'Python 통계 + 검증된 기본 해석')+' · 서버 재계산 기준'+(kind==='cluster'?' · 브라우저 군집과 별도 실행':'');
+ }catch(e){if(seq!==advancedRequest)return;panel.status.textContent='통계 분석 API 연결 실패 · 기본 설명 유지';panel.text.textContent=describe(kind);}
+}
 function calcPayload(){
  if(typeof calculations!=='function')return null;
  const combined=new Map();
@@ -70,7 +99,11 @@ function createPanel(anchor,key){
  const text=document.createElement('p');text.style.margin='8px 0';text.setAttribute('aria-live','polite');
  const status=document.createElement('small');status.style.color='#66788a';status.textContent='현재 화면의 데이터로 계산한 설명 · AI 맞춤 생성 연동 준비 중';
  card.append(title,text,status);
+ if(key==='cluster'){
+  const button=document.createElement('button');button.type='button';button.textContent='군집별 통계 발견과 AI 해석 보기';button.addEventListener('click',()=>runAdvancedInsight('cluster'));card.append(button);
+ }
  if(key==='explore'){
+  const correlation=document.createElement('button');correlation.type='button';correlation.textContent='Spearman 상관관계와 AI 해석 보기';correlation.addEventListener('click',()=>runAdvancedInsight('explore'));card.append(correlation);
   const button=document.createElement('button');button.type='button';button.textContent='현재 범위의 통계 발견과 AI 해석 보기';button.addEventListener('click',runStatisticalInsight);card.append(button);
  }
  if(key==='calc'){
@@ -122,14 +155,14 @@ function describe(key){
  }
  return '';
 }
-function update(key){const panel=panels[key];if(!panel)return;panel.text.textContent=describe(key);if(key==='calc')panel.status.textContent='현재 화면의 데이터로 계산한 설명 · 버튼을 누르면 AI 해설 생성';}
+function update(key){const panel=panels[key];if(!panel)return;if((key==='explore'||key==='cluster')&&panel.status.textContent.includes('서버 재계산 기준'))return;panel.text.textContent=describe(key);if(key==='calc')panel.status.textContent='현재 화면의 데이터로 계산한 설명 · 버튼을 누르면 AI 해설 생성';}
 for(const [id,key] of targets){const el=$(id);if(el)createPanel(el,key);}
 function updateAll(){Object.keys(panels).forEach(update)}
 updateAll();
 const watch=['impact','exStage','exUnit','exImpact','exImpact2','exMode','clusterScope','clusterK','runCluster','add','clear','example','recommendK'];
-watch.forEach(id=>$(id)?.addEventListener('change',()=>{if(id==='impact')staleCalc();if(['exStage','exUnit','exImpact','exMode','exImpact2'].includes(id)){statsRequest++;if(panels.explore)panels.explore.status.textContent='조건 변경됨 · 통계적 발견을 다시 확인하세요.';}setTimeout(updateAll,80)}));
+watch.forEach(id=>$(id)?.addEventListener('change',()=>{if(id==='impact')staleCalc();if(['exStage','exUnit','exImpact','exMode','exImpact2','clusterScope','clusterK'].includes(id)){advancedRequest++;}if(['exStage','exUnit','exImpact','exMode','exImpact2'].includes(id)){statsRequest++;if(panels.explore)panels.explore.status.textContent='조건 변경됨 · 통계적 발견을 다시 확인하세요.';}setTimeout(updateAll,80)}));
 watch.forEach(id=>$(id)?.addEventListener('click',()=>{if(['add','clear','example'].includes(id))staleCalc();setTimeout(updateAll,120)}));
-['basket','clusterChecks'].forEach(id=>$(id)?.addEventListener('change',()=>{if(id==='basket')staleCalc();setTimeout(updateAll,120)}));
+['basket','clusterChecks'].forEach(id=>$(id)?.addEventListener('change',()=>{if(id==='basket')staleCalc();if(id==='clusterChecks')advancedRequest++;setTimeout(updateAll,120)}));
 document.querySelectorAll('[data-tab]').forEach(el=>el.addEventListener('click',()=>setTimeout(updateAll,80)));
 window.LooplyContextInsights={updateAll};
 })();
