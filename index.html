@@ -488,7 +488,7 @@ function clusterPayload(){
 async function requestCluster(payload){
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),45000);
  try{
-  const base=(window.LOOPLY_AI_API_URL||'https://looply-ai-api.onrender.com').replace(/\\/$/,'');
+  const base=(window.LOOPLY_AI_API_URL||'https://looply-ai-api.onrender.com').replace(/[/]$/,'');
   const response=await fetch(base+'/api/cluster-insight',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:controller.signal});
   if(!response.ok){let detail='HTTP '+response.status;try{const error=await response.json();detail=error.detail||detail}catch(_){}throw Error(detail)}
   return await response.json();
