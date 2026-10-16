@@ -785,43 +785,5 @@ async function showAi(topic){
  }catch(err){set(copy);status.textContent='AI 연결이 원활하지 않아 검증된 기본 해설을 표시합니다.'}
 }
 document.querySelectorAll('[data-ai-topic]').forEach(b=>b.addEventListener('click',()=>showAi(b.dataset.aiTopic)));
-</script><script>
-/* AI explanations for every tab. Audited facts remain visible if the API is unavailable. */
-(function(){
-const local={
- report:{finding:'이 보고서는 398개 환경영향 평가계수를 살펴봐요.',meaning:'그래프를 통해 자료가 어디에 모여 있고 어떻게 분포하는지 확인할 수 있어요.',caution:'서로 다른 기준 단위의 수치를 그대로 비교하지 마세요.'},
- calc:{finding:'선택한 평가계수와 입력량을 곱해 환경영향을 계산해요.',meaning:'계산 조건을 바꾸면서 값이 어떻게 달라지는지 살펴볼 수 있어요.',caution:'이 계산만으로 제품 전체의 환경영향이 확정되는 것은 아니에요.'},
- explore:{finding:'그래프에서 평가계수의 분포와 관계를 탐색해요.',meaning:'어떤 값이 많이 나타나는지, 값들이 함께 움직이는지 볼 수 있어요.',caution:'상관관계가 원인을 증명하지는 않아요.'},
- cluster:{finding:'비슷한 수치 패턴을 가진 항목끼리 묶어 살펴봐요.',meaning:'군집은 비슷한 데이터를 찾는 도구예요.',caution:'군집 번호는 친환경 순위나 공식 환경 등급이 아니에요.'}
-};
-const api=window.LOOPLY_AI_API_URL||'https://looply-ai-api.onrender.com';
-const heading={report:'분석 리포트',calc:'환경영향 계산',explore:'데이터 인사이트',cluster:'군집 분석'};
-for(const topic of ['calc','explore','cluster']){
- const section=document.getElementById(topic==='report'?'story':topic);
- if(!section)continue;
- const panel=document.createElement('section');
- panel.className='ai-insight-panel';
- panel.setAttribute('aria-label',heading[topic]+' AI 해설');
- panel.style.margin='22px 0';
- panel.innerHTML='<div class="ai-insight-heading"><div><span class="ai-eyebrow">LOOPLY AI · 쉬운 해설</span><h2>'+heading[topic]+'를 쉽게 읽어볼까요?</h2></div><button type="button" class="looply-ai-run">AI 해설 보기</button></div><div class="ai-insight-grid"><article><h3>🔎 무엇을 발견했나요?</h3><p data-part="finding"></p></article><article><h3>💡 어떤 의미일까요?</h3><p data-part="meaning"></p></article><article><h3>⚠️ 꼭 알아두세요</h3><p data-part="caution"></p></article></div><p class="muted" aria-live="polite" data-status>검증된 데이터 기반 기본 해설</p>';
- const set=insight=>{for(const key of ['finding','meaning','caution'])panel.querySelector('[data-part="'+key+'"]').textContent=insight[key]};
- set(local[topic]);
- const status=panel.querySelector('[data-status]');
- panel.querySelector('button').addEventListener('click',async()=>{
-  status.textContent='AI 해설을 불러오는 중…';
-  try{
-   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),16000);
-   let response;
-   try{response=await fetch(api.replace(/\/$/,'')+'/api/insights',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic}),signal:controller.signal})}finally{clearTimeout(timer)}
-   if(!response.ok)throw Error('API');
-   const data=await response.json();
-   if(!data.insight||!['finding','meaning','caution'].every(k=>typeof data.insight[k]==='string'))throw Error('format');
-   set(data.insight);
-   status.textContent=data.generation==='ai'?'AI 쉬운 설명 · 핵심 사실은 데이터에서 검증':'검증된 기본 해설 · AI 설명은 안전 검증으로 대체';
-  }catch(_){set(local[topic]);status.textContent='AI 서버 연결 실패 · 검증된 기본 해설 표시'}
- });
- section.insertBefore(panel,section.firstChild);
-}
-})();
 </script>
 <script src="./ai_context.js"></script></body></html>
