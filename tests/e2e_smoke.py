@@ -17,8 +17,15 @@ async def main():
         await pg.evaluate("(()=>{const e=document.querySelector('.step[data-step=\"4\"]');const r=e.getBoundingClientRect();window.scrollBy(0,r.top+r.height/2-innerHeight/2)})()"); await pg.wait_for_timeout(800)
         n = await pg.evaluate("[document.querySelectorAll('#sdots circle.miss').length, document.querySelectorAll('#sdots circle.got').length]")
         assert n == [19, 14], n
+        await pg.evaluate("document.getElementById('cview').scrollIntoView()"); await pg.wait_for_timeout(300)
+        await pg.click('[data-cv="carbon"]'); await pg.wait_for_timeout(800)
+        assert await pg.inner_text("#cvN") == "2", "탄소발자국 칸만: 2건"
+        await pg.click('[data-cv="all"]'); await pg.wait_for_timeout(800)
+        assert await pg.inner_text("#cvN") == "6", "모든 범주: 6건"
+        await pg.fill("#wireG", "1"); await pg.dispatch_event("#wireG", "input"); await pg.wait_for_timeout(200)
+        assert "98.9%" == await pg.inner_text("#ex1St"), await pg.inner_text("#ex1St")
         for t in ["notes", "report"]:
             await pg.click(f'[data-tab="{t}"]'); await pg.wait_for_timeout(500)
         assert not errs, errs
-        print("ok: 첫 화면 비교표, 다시 확인할 값 6건, 계산 예시, 스크롤 단계, 탭 전환, 오류 없음"); await b.close()
+        print("ok: 첫 화면 비교표, 다시 확인할 값 6건, 계산 예시, 전선 무게 막대, 범주 보기 전환, 스크롤 단계, 탭 전환, 오류 없음"); await b.close()
 asyncio.run(main())

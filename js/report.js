@@ -125,7 +125,7 @@
 
   /* ---------- 스크롤 등장 효과 ---------- */
   function reveal() {
-    const SEL = '.ch > header, .ch > .lead, .ch > .hint, .ch > .note, .ch > .sub, .methods li, .flag, .ex, .checklist, .checklist li, .ck, .yesno > div, .next, .dec details, .formula, .score, .sc-why, .more-box, .data-grid > *, .story';
+    const SEL = '.ch > header, .ch > .lead, .ch > .hint, .ch > .note, .ch > .sub, .ch > .sub-lead, .ch > .concl, .cview, .methods li, .flag, .ex, .checklist, .checklist li, .ck, .yesno > div, .next, .dec details, .formula, .score, .sc-why, .more-box, .data-grid > *, .story';
     const els = [...document.querySelectorAll('#report ' + SEL)];
     const groups = new Map();
     els.forEach(el => { el.classList.add('rv'); const k = el.parentElement; groups.set(k, (groups.get(k) || 0) + 1); el.style.setProperty('--d', ((groups.get(k) - 1) % 6) * 90 + 'ms'); });
@@ -139,6 +139,43 @@
     requestAnimationFrame(() => document.querySelector('.hero').classList.add('go'));
   }
 
+  /* ---------- 탄소발자국 칸만 보기 / 7개 범주 모두 보기 ---------- */
+  function carbonView() {
+    const box = $('cview'); if (!box) return;
+    const tiles = [...box.querySelectorAll('.cv-t')];
+    let auto = true;
+    const set = (mode, byUser) => {
+      if (byUser) auto = false;
+      box.classList.toggle('carbon', mode === 'carbon'); box.classList.toggle('all', mode === 'all');
+      box.querySelectorAll('[data-cv]').forEach(b => b.setAttribute('aria-pressed', b.dataset.cv === mode));
+      const n = mode === 'carbon' ? tiles.filter(t => t.classList.contains('cin')).length : tiles.length;
+      L.count($('cvN'), n, 0, 600);
+      $('cvMsg').innerHTML = mode === 'carbon'
+        ? `탄소발자국 칸만 보면 <b>${tiles.length - n}건</b>은 드러나지 않는다. 보이는 2건도 파티클보드·우드칩의 칸 밀림은 놓친다.`
+        : `7개 범주를 모두 보면 <b>${tiles.length}건</b>이 모두 드러난다. 물발자국과 오존층영향 칸에서 새로 나타난 값이 많다.`;
+    };
+    box.querySelectorAll('[data-cv]').forEach(b => b.addEventListener('click', () => set(b.dataset.cv, true)));
+    set('carbon');
+    // 처음 화면에 들어오면 잠시 뒤 한 번 자동으로 전환해 보여 준다
+    L.onView(box, () => setTimeout(() => { if (auto) set('all'); }, L.reduce ? 0 : 1800));
+  }
+
+  /* ---------- 예 1: 전선 무게 바꾸기 ---------- */
+  function wireSlider() {
+    const s = $('wireG'); if (!s || !W1) return;
+    const draw = () => {
+      const g = +s.value / 1000, rest = 2 - g, rw = rest * W1.med;
+      const A = g * W1.wire + rw, B = g * W1.pvc + rw, share = g * W1.wire / A * 100, ratio = A / B;
+      $('wireGv').textContent = s.value; s.style.setProperty('--p', ((s.value - 1) / 99 * 100) + '%');
+      $('ex1A').style.setProperty('--w', '100%'); $('ex1B').style.setProperty('--w', Math.max(0.4, B / A * 100) + '%');
+      $('ex1At').textContent = vol(A); $('ex1Bt').textContent = vol(B);
+      $('ex1S').style.width = share + '%'; $('ex1St').textContent = share.toFixed(1) + '%';
+      const r = ratio >= 100 ? (Math.round(ratio / 10) * 10).toLocaleString('ko-KR') : Math.round(ratio).toLocaleString('ko-KR');
+      $('ex1R').innerHTML = `전선 ${s.value}g의 계수 하나 때문에 제품의 물발자국이 <b>약 ${r}배</b> 달라진다. 1g만 넣어도 결과의 대부분이 전선에서 나온다.`;
+    };
+    s.addEventListener('input', draw); draw();
+  }
+
   /* ---------- 계산 예시의 막대 ---------- */
   const exBars = rows => {
     const mx = Math.max(...rows.map(r => r.v));
@@ -146,20 +183,19 @@
   };
   const vol = m3 => (m3 >= 1 ? `${(Math.round(m3 * 10) / 10).toLocaleString('ko-KR')}m³ (약 ${Math.round(m3).toLocaleString('ko-KR')}톤)` : m3 >= 0.001 ? `${(Math.round(m3 * 1e4) / 10).toLocaleString('ko-KR')}L` : `${(Math.round(m3 * 1e5) / 100).toLocaleString('ko-KR')}L`);
 
+  let W1 = null;
   function build() {
     const nStage = D.filter(r => r.stage === '원료 및 에너지 생산').length, nKg = RES.base_n;
     const pairNs = LENSES.map(k => CI(k).n), nMin = Math.min(...pairNs), nMax = Math.max(...pairNs);
     const ozMiss = 100 - Math.round(L.coverage(POOL, 6) * 100), ozN = L.has(POOL, 6).length;
-    const wcw = RES.within_category_carbon_water, wcr = RES.within_category_carbon_resource, nb = RES.carbon_water_without_basic_chem;
-    const w = CAP('물'), a = CAP('산성'), cb = L.PP['물'][POOL.find(r => r.name === '골판지').id];
-    const tcN = L.top20('물').tc.size;
+    const nb = RES.carbon_water_without_basic_chem;
+    const w = CAP('물'), a = CAP('산성');
     const basicShare = Math.round(POOL.filter(r => r.category === '기초화학물질').length / POOL.length * 100);
     const sel = RES.selection, rv = RES.review, rs = RES.review_sensitivity;
     const wire = rv.extreme.find(x => x.name.startsWith('기기선')), sand = rv.extreme.find(x => x.name === '하천모래');
     const wireRow = POOL.find(r => r.name.startsWith('기기선')), pvcRow = POOL.find(r => r.name === 'PVC 전선');
     const pvc = pvcRow.v[4], fineAgg = POOL.find(r => r.name === '순환 잔골재').v[4];
     const wMed = wire.value / wire.times_median;
-    const w10 = cutAt('물', 10), w20 = cutAt('물', 20), w30 = cutAt('물', 30), e20 = cutAt('부영', 20), e30 = cutAt('부영', 30);
     const pairNames = new Set(rv.same_pairs.flatMap(p => [p.a, p.b]));
     const sharedExtra = rv.shared_values.filter(g => !g.items.every(it => pairNames.has(it.name)));
     const pcb = POOL.filter(r => r.v[4] != null).sort((x, y) => y.v[4] - x.v[4])[1];
@@ -175,34 +211,37 @@
       const rows = D.filter(r => r.stage === st);
       return { st, n: rows.length, units: new Set(rows.map(r => r.unit)).size, all7: rows.filter(r => r.v.every(v => v != null)).length, cOnly: rows.filter(r => r.v[0] != null && r.v.filter(v => v != null).length === 1).length };
     });
-    const funnel = [
-      ['전체 평가계수', D.length, ''],
-      ['원료 및 에너지 생산 단계', nStage, '다른 단계는 단위가 다르거나 탄소발자국만 있다'],
-      ['단위가 kg인 원료', nKg, '개(ea)·m³·MJ·kWh·m² 단위 9건 제외'],
-      ['수자원(상수·공업용수) 제외', POOL.length, '재료가 아니라 물이라서 제외'],
-      ['비교하는 두 영향 값이 모두 있는 원료', `${nMin}~${nMax}`, '어떤 두 영향을 비교하느냐에 따라 수가 다르다']
-    ];
     const decisions = [
       ['리포트의 중심', '이상한 값 찾기를 앞에, 영향범주 비교를 뒤에 두었다', '평가계수는 컨설턴트가 사용량에 곱해 그대로 쓰는 값이다. 값 하나가 틀리면 제품 결과가 통째로 달라진다. 원료끼리의 비교보다 이쪽이 실무에 바로 쓰인다.', '처음에는 탄소발자국과 물발자국 비교를 주제로 삼았다. 원료 값끼리의 관계라 “그래서 제품은?”이라는 질문에 답하기 어려웠다.'],
       ['다시 확인할 값의 순서', '오류일 가능성과 계산에 주는 영향을 함께 보고 정했다', '납·염소처럼 성질이 전혀 다른 원료의 값이 모두 같으면 우연으로 설명하기 어렵다. 기기선은 오류라면 제품 결과를 수천 배 바꾼다. 오존층영향이 큰 불소 화합물처럼 공정을 생각하면 설명이 되는 값은 뒤에 두었다.', '찾은 순서대로 늘어놓으면 덜 중요한 값이 앞에 온다.'],
       ['다시 확인할 값의 처리', '오류라고 쓰지 않고, 분석에서도 빼지 않았다', '원본 자료와 대조하기 전에는 오류인지 알 수 없다. 대신 이 값들을 뺀 결과를 따로 계산해 비교했다.', '임의로 빼거나 고치면 원자료를 바꾼 분석이 된다.'],
       ['1만 배 기준', '중앙값의 1만 배 이상, 1만분의 1 이하만 골랐다', `같은 범주 안에서도 수천 배 차이는 흔하다. 물발자국 2위인 ${pcb.name}도 중앙값의 약 ${Math.round(pcb.v[4] / wMed / 100) * 100}배다. 그보다 확실히 튀는 값만 고르려고 1만 배로 정했다.`, '기준을 1천 배로 낮추면 공정 특성상 원래 큰 값까지 섞인다.'],
       ['결론의 범위', '원료 1kg당 값에 대한 결론으로 한정했다', '제품의 환경영향은 원료마다 ‘사용량 × 1kg당 값’을 더해 계산한다. 이 데이터에는 사용량이 없으므로 제품끼리의 관계는 알 수 없다. 4장의 제품 계산은 가상의 예다.', '원료 값의 관계를 제품의 관계처럼 쓰게 된다.'],
+      ['비교 대상', '원료 단계의 1kg당 값 187종만 비교했다', `단계마다 기준이 되는 양이 다르다. 원료 단계 ${nStage}건 중 ${nKg}건이 1kg당 값이고 나머지는 1개당(${sel.stage_units.ea}건) 등이다. 다이오드(1개당)와 트랜지스터(1kg당)를 같은 줄에 세우면 소재가 아니라 단위가 순서를 정한다. 공업용수·상수는 원료가 아니라 뺐고, 오존층영향은 ${POOL.length}종 중 ${ozN}종에만 값이 있어(${ozMiss}% 비어 있음) 비교에서 뺐다.`, `공업용수·상수를 넣어도 탄소발자국–물발자국 ρ는 ${sel.rho_with_utility_water.toFixed(2)}로 비슷하다.`],
       ['비교 방법', '값의 크기 대신 순위로, 두 값이 모두 있는 원료끼리 비교했다', '같은 영향 안에서도 값이 수십만 배까지 차이 난다. 값으로 비교하면 큰 값 몇 개가 결과를 정한다. 또 값이 있는 원료 수가 영향마다 달라(탄소발자국 187종, 물발자국 163종) 두 값이 모두 있는 원료끼리 순위를 매겼다. ‘해당없음’은 0으로 채우지 않았다.', '평균이나 일반 상관계수를 쓰면 극단값 몇 개에 끌려간다.'],
       ['상위 20% 기준', '모든 영향에서 상위 원료가 30종 이상이 되는 가장 작은 기준', `30종이면 원료 1종에 비율이 약 3%p 움직이고, 15종이면 약 7%p 움직인다. 15% 기준이면 가장 작은 그룹이 ${RES.cutoff_min_top['15']}종, 10%면 ${RES.cutoff_min_top['10']}종이다.`, '20% 하나만 보면 부영양화처럼 기준에 따라 결과가 달라지는 경우를 놓친다. 그래서 10·20·30%를 함께 봤다.'],
       ['소재군 차이', '소재군별로, 가장 많은 소재군을 빼고 다시 계산했다', `기초화학물질을 빼도 탄소발자국–물발자국 ρ는 ${nb.rho.toFixed(2)}(${nb.n}종)였다.`, '소재군이 섞여 생긴 결과였다면 결론이 바뀌었을 것이다.']
     ];
     const chapters = [['c1', '데이터'], ['c2', '어떻게 찾았나'], ['c3', '다시 확인할 값'], ['c4', '계산에 주는 영향'], ['c5', '탄소발자국과 다른 영향'], ['c6', '결과 확인과 한계'], ['c7', '분석 과정의 판단']];
     const steps = [
-      ['탄소발자국 순서대로 세우면', `원료 ${POOL.length}종을 탄소발자국이 작은 것부터 큰 것까지 줄 세웠다. 다른 영향도 순서가 똑같다면 모든 점이 이 대각선 위에 놓인다.`],
-      ['세로축을 물발자국으로 바꾸면', `점이 넓게 흩어진다. 탄소발자국이 크다고 물발자국도 큰 것은 아니라는 뜻이다. 순위상관 ρ는 <mark>${CI('물').rho.toFixed(2)}</mark>로, 거의 비례하지 않는다. ρ가 1이면 순서가 완전히 같고, 0이면 아무 관계가 없다.`],
-      ['탄소발자국이 큰 원료', `탄소발자국 상위 20%인 원료는 <mark>${tcN}종</mark>이다. 오른쪽 세로 띠에 있다.`],
-      ['물발자국이 큰 원료', `물발자국 상위 20%인 원료는 <mark>${w['다른영향상위']}종</mark>이다. 위쪽 가로 띠에 있다. 두 값이 비례한다면 두 띠에 같은 원료가 모여야 한다.`],
-      [`두 띠에 함께 있는 원료는 ${w['함께상위']}종`, `물발자국이 큰 ${w['다른영향상위']}종 중 <mark class="m-got">탄소발자국도 큰 원료는 ${w['함께상위']}종</mark>이다(진녹색 점). 나머지 <mark class="m-miss">${w['빠진']}종은 물발자국만 크고 탄소발자국은 크지 않다</mark>(주황색 점).<small>두 값이 아무 관계가 없어도 20%(33종 중 7종 정도)는 우연히 겹친다. 14종은 그보다 많지만 10종 중 4종 꼴이다.</small>`],
-      ['예: 골판지', `골판지는 탄소발자국이 <mark>${L.topLabel(cb.c)}</mark>로 작은 편이지만, 물발자국은 <mark class="m-miss">${L.topLabel(cb.o)}</mark>로 큰 편이다. 제품에서 골판지의 물발자국이 실제로 클지는 얼마나 쓰느냐에 달려 있다.`],
-      ['산성비는 탄소발자국에 비례한다', `산성비로 바꾸면 점이 대각선 근처에 모인다. 산성비가 큰 ${a['다른영향상위']}종 중 <mark>${a['함께상위']}종</mark>이 탄소발자국도 크다.<span class="slens"><em>다른 영향범주 보기</em>${LENSES.map(k => `<button type="button" data-slens="${k}" aria-pressed="false">${NAME[k]}</button>`).join('')}</span>`]
+      [0, '탄소발자국 순서대로 세우면', `원료 ${POOL.length}종을 탄소발자국이 작은 것부터 큰 것까지 줄 세웠다. 다른 영향도 순서가 똑같다면 모든 점이 이 대각선 위에 놓인다.`],
+      [1, '세로축을 물발자국으로 바꾸면', `점이 넓게 흩어진다. 탄소발자국이 크다고 물발자국도 큰 것은 아니다. 순위상관 ρ는 <mark>${CI('물').rho.toFixed(2)}</mark>로, 거의 비례하지 않는다. ρ가 1이면 순서가 완전히 같고, 0이면 아무 관계가 없다.`],
+      [4, `물발자국이 큰 ${w['다른영향상위']}종 중 ${w['함께상위']}종만 탄소발자국도 컸다`, `위쪽 띠는 물발자국 상위 20%, 오른쪽 띠는 탄소발자국 상위 20%다. 물발자국이 큰 ${w['다른영향상위']}종 중 <mark class="m-got">탄소발자국도 큰 원료는 ${w['함께상위']}종</mark>(진녹색 점)이고, <mark class="m-miss">나머지 ${w['빠진']}종은 탄소발자국이 크지 않다</mark>(주황색 점).<small>두 값이 아무 관계가 없어도 20%(33종 중 7종 정도)는 우연히 겹친다.</small>`],
+      [6, '산성비는 탄소발자국에 비례한다', `산성비로 바꾸면 점이 대각선 근처에 모인다. 산성비가 큰 ${a['다른영향상위']}종 중 <mark>${a['함께상위']}종</mark>이 탄소발자국도 크다.<span class="slens"><em>다른 영향범주 보기</em>${LENSES.map(k => `<button type="button" data-slens="${k}" aria-pressed="false">${NAME[k]}</button>`).join('')}</span>`]
     ];
+
     const leadPair = rv.same_pairs.find(p => [p.a, p.b].includes('납'));
+    // 3장의 여섯 가지 값이 어느 범주에 있는지 (same: 다른 원료와 같은 값, odd: 자릿수가 튀거나 칸이 밀린 값)
+    const CVK = [['탄소', '탄소'], ['자원', '자원'], ['산성', '산성비'], ['부영', '부영양'], ['물', '물'], ['스모그', '스모그'], ['오존', '오존층']];
+    const CVF = [
+      { n: 1, t: '납·염소', s: '다섯 범주 값이 모두 같다', same: ['탄소', '자원', '산성', '부영', '물'], odd: [] },
+      { n: 2, t: '기기선', s: `물발자국이 PVC 전선의 약 ${Math.round(wire.value / pvc / 1e4)}만 배`, same: [], odd: ['물'] },
+      { n: 3, t: '파티클보드·우드칩', s: '오존층영향과 산성비에 같은 숫자', same: ['탄소', '자원', '부영', '스모그'], odd: ['오존', '산성'], part: true },
+      { n: 4, t: '물발자국 값 공유', s: '재질이 다른데 값이 같다', same: ['물'], odd: [] },
+      { n: 5, t: '오존층영향이 큰 값', s: '1kg당 0.001 이상 4종', same: [], odd: ['오존'] },
+      { n: 6, t: '하천모래', s: `물발자국이 순환 잔골재의 약 ${(Math.round(fineAgg / sand.value / 100) * 100).toLocaleString('ko-KR')}분의 1`, same: [], odd: ['물'] }
+    ].map(f => ({ ...f, has: [...f.same, ...f.odd] }));
+    W1 = { wire: wire.value, pvc, med: wMed };
 
     $('report').innerHTML = `
     <section class="hero">
@@ -285,10 +324,12 @@
       <section class="ch" id="c4"><header><span class="chno">4</span><h2>계산 결과에 주는 영향</h2></header>
         <p class="lead">위의 값을 그대로 쓰면 <b>제품 결과가 얼마나 달라지는지</b> 두 가지 가상의 예로 계산했다. 사용량은 설명을 위해 정한 값이다.</p>
         <div class="examples">
-          <article class="ex"><h3>예 1. 전선 20g이 들어간 소형 가전</h3>
-            <p>원료가 모두 2kg이고 그중 전선이 20g인 제품을 가정했다. 나머지 원료 1.98kg은 물발자국 중앙값(1kg당 ${L.fmt(wMed)}m³)을 썼다.</p>
-            ${exBars([{ label: '기기선 값으로 계산', v: ex1A, text: vol(ex1A), hi: true }, { label: 'PVC 전선 값으로 계산', v: ex1B, text: vol(ex1B) }])}
-            <p class="ex-r">전선 값 하나 때문에 제품의 물발자국이 <b>약 ${(Math.round(ex1A / ex1B / 100) * 100).toLocaleString('ko-KR')}배</b> 달라진다. 기기선 값으로 계산하면 <b>제품 물발자국의 ${ex1Share.toFixed(1)}%가 20g짜리 전선</b>에서 나온다.</p></article>
+          <article class="ex"><h3>예 1. 전선이 들어간 소형 가전 (원료 2kg)</h3>
+            <p>원료가 모두 2kg인 제품을 가정했다. 전선을 뺀 나머지 원료는 물발자국 중앙값(1kg당 ${L.fmt(wMed)}m³)을 썼다. <b>막대를 끌어 전선 무게를 바꿔 보자.</b></p>
+            <div class="wslider"><label for="wireG">전선 무게</label><input type="range" id="wireG" min="1" max="100" step="1" value="20"><output><b id="wireGv">20</b>g</output></div>
+            <div class="exbars" id="ex1Bars"><div class="exb hi"><span>기기선 값으로 계산</span><div class="exb-t"><i id="ex1A"></i></div><b id="ex1At"></b></div><div class="exb"><span>PVC 전선 값으로 계산</span><div class="exb-t"><i id="ex1B"></i></div><b id="ex1Bt"></b></div></div>
+            <div class="share"><div class="share-t"><i id="ex1S"></i></div><span>기기선 값으로 계산할 때 제품 물발자국 중 <b id="ex1St"></b>가 전선에서 나온다</span></div>
+            <p class="ex-r" id="ex1R"></p></article>
           <article class="ex"><h3>예 2. 콘크리트에 들어가는 잔골재 ${kgAgg}kg</h3>
             <p>천연 모래와 재활용 골재 중 무엇을 쓸지 비교하는 상황을 가정했다.</p>
             ${exBars([{ label: '순환 잔골재 값으로 계산', v: ex2F, text: vol(ex2F), hi: true }, { label: '하천모래 값으로 계산', v: ex2S, text: vol(ex2S) }])}
@@ -301,6 +342,7 @@
           <li><b>같은 값</b>다른 원료와 값이 똑같지 않은지 본다. 비슷한 원료의 자료를 대신 쓴 것이라면 그 출처를 기록한다.</li>
           <li><b>자릿수</b>같은 종류의 원료와 비교해 수천 배 이상 차이 나는 값은 원본과 대조한다.</li>
           <li><b>기여도</b>제품 결과의 대부분이 원료 하나에서 나오면, 그 원료의 계수부터 다시 본다.</li>
+          <li><b>모든 범주</b>탄소발자국만이 아니라 7개 범주를 모두 같은 방식으로 확인한다. 3장의 값 6건 중 4건은 탄소발자국이 아닌 칸에 있었다.</li>
           <li><b>빈 값</b>‘해당없음’을 0으로 넣지 않는다. 탄소발자국만 있는 항목은 다른 범주를 별도 자료로 채운다.</li></ol></div>
       </section>
 
@@ -308,35 +350,33 @@
         <p class="lead">환경성적표지는 7개 범주를 공개하지만, 그다음 단계인 저탄소제품 인증은 탄소발자국만 본다. 그래서 <b>탄소발자국이 큰 원료는 다른 영향도 큰지</b>, 원료 ${POOL.length}종의 1kg당 값으로 확인했다. 값이 수십만 배까지 차이 나서 크기 대신 순서(순위)로 비교했고, 두 순서가 얼마나 같은지는 순위상관 ρ로 나타냈다. 결과는 <b>산성비·자원발자국은 비례하고, 물발자국은 거의 비례하지 않았다.</b></p>
         <div class="story">
           <div class="st-fig"><div class="st-sticky"><figure class="plotcard" id="stPlot"></figure><div class="meter" id="stMeter"></div></div></div>
-          <div class="st-steps">${steps.map(([h, t], i) => `<article class="step" data-step="${i}"><span class="sn">${i + 1} / ${steps.length}</span><h3>${h}</h3><p>${t}</p></article>`).join('')}</div>
+          <div class="st-steps">${steps.map(([code, h, t], i) => `<article class="step" data-step="${code}"><span class="sn">${i + 1} / ${steps.length}</span><h3>${h}</h3><p>${t}</p></article>`).join('')}</div>
         </div>
         <h3 class="sub">다섯 가지 영향범주 결과</h3>
         <div class="score" id="score"></div>
-        <p class="hint">‘탄소발자국으로 짐작’은 상위 10·20·30% 세 기준 모두에서 큰 원료의 절반 이상이 탄소발자국도 크면 ‘짐작할 수 있다’, 세 기준 모두 절반이 안 되면 ‘짐작하기 어렵다’, 기준에 따라 다르면 ‘일부만 가능하다’로 적었다.</p>
-        <p class="sc-why"><b>부영양화는 비례하는데 왜 ‘일부만 가능’인가</b>순위상관(ρ ${CI('부영').rho.toFixed(2)})은 원료 전체의 경향을 본다. 부영양화가 가장 큰 원료들만 보면 상위 20%에서 ${e20.top}종 중 ${e20.both}종만 탄소발자국도 컸다. 상위 30%로 넓히면 ${e30.top}종 중 ${e30.both}종이다. 부영양화가 특히 큰 몇몇 원료는 탄소발자국으로 짐작하기 어렵다는 뜻이다.</p>
-        <details class="more-box"><summary>비교 대상을 고른 기준</summary>
-          <div class="data-grid two-col">
-            <figure class="fig"><figcaption>분석 대상을 고른 과정</figcaption>
-              <ol class="funnel" id="funnel">${funnel.map(([n, v, note]) => { const num = typeof v === 'number' ? v : +String(v).split('~')[1]; return `<li><div class="fn-h"><span>${n}</span><b>${v}</b></div><div class="fn-bar"><i style="--w:${(num / D.length * 100).toFixed(1)}%"></i></div>${note ? `<p>${note}</p>` : ''}</li>`; }).join('')}</ol></figure>
-            <table class="tbl why"><thead><tr><th>기준</th><th>이유</th></tr></thead><tbody>
-              <tr><td><b>원료 단계, kg 단위만</b></td><td>단계마다 기준이 되는 양이 다르다. 원료 단계 ${nStage}건 중 ${nKg}건이 1kg당 값이고, 나머지는 1개당(${sel.stage_units.ea}건) 등이다. 다이오드(1개당)와 트랜지스터(1kg당)를 같은 줄에 세우면 소재가 아니라 단위가 순서를 정한다.</td></tr>
-              <tr><td><b>수자원 2건 제외</b></td><td>공업용수와 상수는 원료가 아니라 물이다. 넣어도 탄소발자국–물발자국 ρ는 ${sel.rho_with_utility_water.toFixed(2)}(제외 시 ${CI('물').rho.toFixed(2)})로 비슷하다.</td></tr>
-              <tr><td><b>오존층영향 제외</b></td><td>원료 ${POOL.length}종 중 ${ozN}종에만 값이 있다(${ozMiss}% 비어 있음).</td></tr>
-              <tr><td><b>상위 20% 기준</b></td><td>다섯 영향 모두에서 상위 원료가 30종 이상이 되는 가장 작은 기준이다(15%면 ${RES.cutoff_min_top['15']}종, 10%면 ${RES.cutoff_min_top['10']}종).</td></tr>
-            </tbody></table>
+        <p class="hint">‘탄소발자국으로 짐작’은 상위 10·20·30% 세 기준 모두에서 큰 원료의 절반 이상이 탄소발자국도 크면 ‘짐작할 수 있다’, 모두 절반이 안 되면 ‘짐작하기 어렵다’, 기준에 따라 다르면 ‘일부만 가능하다’로 적었다. 부영양화는 전체로는 비례하지만(ρ ${CI('부영').rho.toFixed(2)}), 부영양화가 특히 큰 원료들은 탄소발자국이 크지 않은 경우가 많아 ‘일부만 가능’이다.</p>
+
+        <h3 class="sub">탄소발자국 칸만 확인했다면</h3>
+        <p class="sub-lead">3장의 여섯 가지 값은 어느 칸에 있을까. 버튼을 눌러 비교해 보자. 칸 띠의 색은 문제가 있는 범주다(연두: 다른 원료와 같은 값, 주황: 자릿수가 튀거나 칸이 밀린 값).</p>
+        <div class="cview carbon" id="cview">
+          <div class="cv-ctl">
+            <div class="seg" role="group" aria-label="보기 전환"><button type="button" data-cv="carbon" aria-pressed="true">탄소발자국 칸만 보기</button><button type="button" data-cv="all" aria-pressed="false">7개 범주 모두 보기</button></div>
+            <div class="cv-count"><b id="cvN">2</b><span>/ 6건이 보인다</span></div>
           </div>
-        </details>
+          <div class="cv-grid">${CVF.map((f, i) => `<article class="cv-t${f.has.includes('탄소') ? ' cin' : ''}" style="--i:${i}"><header><span class="rank">${f.n}</span><div><h4>${f.t}</h4><p>${f.s}</p></div></header>
+            <div class="strip">${CVK.map(([k, lb]) => `<i data-k="${k}" class="${f.same.includes(k) ? 'same' : f.odd.includes(k) ? 'odd' : ''}"><em>${lb}</em></i>`).join('')}</div>
+            ${f.part ? `<small class="cv-part">탄소발자국 칸에서는 같은 값만 보이고, 칸 밀림은 안 보인다</small>` : ''}</article>`).join('')}</div>
+          <p class="cv-msg" id="cvMsg"></p>
+        </div>
+        <p class="concl">탄소발자국과 다른 영향은 비례하지 않는 경우가 많았고, 원자료에서 다시 확인할 값도 <b>6건 중 4건이 탄소발자국이 아닌 칸</b>에 있었다. 평가계수는 탄소발자국만이 아니라 <b>7개 범주를 모두 같은 방식으로 확인</b>해야 한다.</p>
       </section>
 
       <section class="ch" id="c6"><header><span class="chno">6</span><h2>결과 확인과 한계</h2></header>
-        <p class="lead">5장의 결과가 우연이나 데이터 구성 때문인지 다섯 가지로 확인했다. <b>어느 경우에도 물발자국은 탄소발자국에 거의 비례하지 않았다.</b></p>
+        <p class="lead">5장의 결과가 우연이나 데이터 구성 때문인지 세 가지로 확인했다. <b>어느 경우에도 물발자국은 탄소발자국에 거의 비례하지 않았다.</b></p>
         <div class="checks">
           <div class="ck"><h3>원료를 다시 뽑아 계산해도</h3><p>2,000번 다시 계산하면 탄소발자국–물발자국 ρ는 <b>${CI('물').lo.toFixed(2)}~${CI('물').hi.toFixed(2)}</b> 사이였다.</p></div>
           <div class="ck"><h3>가장 많은 소재군을 빼도</h3><p>원료의 ${basicShare}%인 기초화학물질을 빼고 계산해도 ρ는 <b>${nb.rho.toFixed(2)}</b>(${nb.n}종)였다.</p></div>
-          <div class="ck"><h3>기준을 바꿔도</h3><p>물발자국이 큰 원료 중 탄소발자국도 큰 원료는 상위 10%에서 ${w10.rate}%, 20%에서 ${w20.rate}%, 30%에서 ${w30.rate}%였다.</p></div>
           <div class="ck"><h3>3장의 값을 빼도</h3><p>1·2·3·6번 원료 ${rs.strong.excluded.length}종을 빼면 ρ는 <b>${rs.strong['물소모'].rho.toFixed(2)}</b>, 1·2·3·4·6번 원료 ${rs.all.excluded_n}종을 빼면 <b>${rs.all['물소모'].rho.toFixed(2)}</b>였다.</p></div>
-          <div class="ck wide"><h3>소재군별로 나눠 봐도</h3><p><b>6개 소재군 모두</b> 탄소발자국–물발자국 ρ가 탄소발자국–자원발자국 ρ보다 낮았다.</p>
-            <table class="mini"><thead><tr><th>소재군</th><th class="num">원료 수</th><th class="num">탄소발자국–자원발자국</th><th class="num">탄소발자국–물발자국</th></tr></thead><tbody>${Object.keys(wcw).sort((x, y) => wcw[y].n - wcw[x].n).map(c => `<tr><td>${esc(c)}</td><td class="num">${wcw[c].n}</td><td class="num">${wcr[c] ? wcr[c].rho.toFixed(2) : '-'}</td><td class="num"><b>${wcw[c].rho.toFixed(2)}</b></td></tr>`).join('')}</tbody></table></div>
         </div>
         <h3 class="sub">해석할 때 주의할 점</h3>
         <div class="formula" aria-label="제품의 물발자국은 원료마다 사용량 곱하기 1kg당 값을 모두 더한 값">
@@ -349,7 +389,8 @@
           <div class="yes"><h3>이 분석으로 말할 수 있는 것</h3><ul>
             <li>원자료에서 원본과 대조해 봐야 할 값과 그 이유</li>
             <li>그 값을 그대로 쓰면 제품 계산이 얼마나 달라질 수 있는지(가상의 예)</li>
-            <li>원료 1kg당 값에서 탄소발자국이 어떤 범주와 비례하고 어떤 범주와 비례하지 않는지</li></ul></div>
+            <li>원료 1kg당 값에서 탄소발자국이 어떤 범주와 비례하고 어떤 범주와 비례하지 않는지</li>
+            <li>다시 확인할 값 6건 중 4건이 탄소발자국이 아닌 칸에 있다는 것</li></ul></div>
           <div class="no"><h3>말할 수 없는 것</h3><ul>
             <li>3장의 값이 실제로 오류인지(원본 대조 전)</li>
             <li>제품 단위에서도 탄소발자국과 물발자국이 같은 관계인지</li>
@@ -374,9 +415,8 @@
     chapters.forEach(([id]) => io.observe($(id)));
     const rail = document.querySelector('.rail');
     new IntersectionObserver(es => es.forEach(en => rail.classList.toggle('show', en.isIntersecting || en.boundingClientRect.top < 0)), { rootMargin: '0px 0px -60% 0px' }).observe(document.querySelector('.chapters'));
-    const fn = $('funnel'); document.querySelector('.more-box').addEventListener('toggle', () => fn.classList.add('drawn'));
     document.querySelectorAll('.exbars').forEach(el => L.onView(el, () => el.classList.add('drawn')));
-    reveal();
+    reveal(); carbonView(); wireSlider();
   }
   L.tabs.report = { build, built: false };
 })();

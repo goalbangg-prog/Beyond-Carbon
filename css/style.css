@@ -207,7 +207,7 @@ svg[data-step="2"] .diag, svg[data-step="3"] .diag, svg[data-step="4"] .diag, sv
 .tag.no { background: var(--forest); color: var(--lime); }
 
 /* 3장: 반론 점검 */
-.checks { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; align-items: stretch; }
+.checks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: stretch; }
 .ck.wide { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1.4fr; grid-template-rows: auto 1fr; gap: 8px 32px; align-items: start; }
 .ck.wide .mini { margin-top: 0; grid-column: 2; grid-row: 1 / span 2; }
 .ck { position: relative; background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-m); padding: 22px 24px 20px; }
@@ -496,8 +496,60 @@ mark.m-miss { background: var(--amber-soft); color: #9A4F0B; padding: 1px 6px; b
 @keyframes glow { 0% { color: inherit; } 50% { color: var(--green); text-shadow: 0 0 12px rgba(125, 181, 71, .5); } 100% { text-shadow: none; } }
 @keyframes drift { from { transform: translate(0, 0) scale(1); } to { transform: translate(-60px, 40px) scale(1.12); } }
 @keyframes hnPop { 0% { transform: scale(.6); } 60% { transform: scale(1.12); } 100% { transform: none; } }
+
+/* ===== 5장: 탄소발자국 칸만 보기 ===== */
+.sub-lead { font-size: 15px; color: #2E4337; max-width: 80ch; margin: -4px 0 16px; }
+.cview { background: var(--forest); border-radius: var(--r-m); padding: 22px 24px 20px; color: #DCE9D8; }
+.cv-ctl { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 18px; }
+.seg { display: inline-flex; background: rgba(255, 255, 255, .06); border: 1px solid rgba(198, 224, 90, .25); border-radius: 999px; padding: 4px; }
+.seg button { font: 700 14.5px var(--sans); color: #C5D8C9; background: none; border: 0; border-radius: 999px; padding: 9px 18px; cursor: pointer; transition: background .3s, color .3s; }
+.seg button:hover { color: #fff; }
+.seg button[aria-pressed="true"] { background: var(--lime); color: var(--forest); box-shadow: 0 0 18px rgba(198, 224, 90, .35); }
+.cv-count b { font-size: 40px; font-weight: 800; color: var(--lime); letter-spacing: -0.03em; }
+.cv-count span { font-size: 15px; color: #C5D8C9; margin-left: 6px; }
+.cv-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.cv-t { background: var(--forest-2); border: 1px solid rgba(198, 224, 90, .3); border-radius: var(--r-s); padding: 14px 16px; transition: opacity .6s ease, filter .6s ease, border-color .6s, box-shadow .6s, transform .6s var(--ease); transition-delay: calc(var(--i) * 120ms); }
+.cv-t > header { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: start; }
+.cv-t .rank { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 14px; background: var(--lime); color: var(--forest); }
+.cv-t h4 { font-size: 16px; color: #fff; margin: 3px 0 2px; }
+.cv-t p { font-size: 13px; color: #C5D8C9; margin: 0; }
+.strip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-top: 12px; }
+.strip i { height: 34px; border-radius: 4px; background: rgba(255, 255, 255, .07); display: grid; place-items: end center; padding-bottom: 3px; transition: background .5s ease, opacity .5s ease; transition-delay: calc(var(--i) * 120ms + 150ms); }
+.strip em { font-style: normal; font-size: 10.5px; color: #9FB9A6; }
+.strip i.same { background: var(--lime); } .strip i.same em { color: var(--forest); font-weight: 700; }
+.strip i.odd { background: var(--amber); } .strip i.odd em { color: #fff; font-weight: 700; }
+.cv-part { display: block; margin-top: 8px; font-size: 12px; color: var(--amber); opacity: 0; transition: opacity .4s; }
+.cview.carbon .cv-part { opacity: 1; }
+.cview.carbon .cv-t:not(.cin) { opacity: .28; filter: grayscale(1); transform: scale(.97); }
+.cview.carbon .cv-t.cin { border-color: var(--lime); box-shadow: 0 0 22px rgba(198, 224, 90, .22); }
+.cview.carbon .strip i:not([data-k="탄소"]) { background: rgba(255, 255, 255, .05) !important; }
+.cview.carbon .strip i:not([data-k="탄소"]) em { color: #6F8A78 !important; font-weight: 400 !important; }
+.cview.carbon .strip i[data-k="탄소"] { outline: 2px solid #fff; outline-offset: 1px; }
+.cview.all .cv-t { border-color: rgba(198, 224, 90, .55); }
+.cview.all .cv-t:not(.cin) { animation: lightUp 1s ease both; animation-delay: calc(var(--i) * 120ms); }
+.cv-msg { margin: 16px 0 0; font-size: 15px; color: #DCE9D8; min-height: 24px; }
+.cv-msg b { color: var(--lime); }
+.concl { margin: 20px 0 0; padding: 18px 22px; border-left: 4px solid var(--lime); background: var(--surface); border-radius: 0 var(--r-m) var(--r-m) 0; font-size: 16px; color: #2E4337; }
+.concl b { color: var(--green); }
+@keyframes lightUp { 0% { box-shadow: 0 0 0 rgba(198, 224, 90, 0); } 40% { box-shadow: 0 0 30px rgba(198, 224, 90, .55); } 100% { box-shadow: 0 0 0 rgba(198, 224, 90, 0); } }
+
+/* ===== 4장: 전선 무게 막대 ===== */
+.wslider { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; margin-top: 14px; padding: 10px 14px; background: var(--paper); border-radius: var(--r-s); }
+.wslider label { font-size: 13.5px; font-weight: 700; color: var(--forest); }
+.wslider output { font-size: 14px; color: var(--slate); min-width: 54px; text-align: right; }
+.wslider output b { font-size: 22px; color: var(--forest); }
+input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; border-radius: 999px; background: linear-gradient(90deg, var(--forest) var(--p, 20%), var(--rule) var(--p, 20%)); cursor: pointer; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: var(--lime); border: 3px solid var(--forest); box-shadow: 0 2px 8px rgba(15, 59, 42, .3); transition: transform .15s; }
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--lime); border: 3px solid var(--forest); }
+.exbars#ex1Bars .exb-t i { transition: width .35s var(--ease); }
+.share { margin-top: 14px; }
+.share-t { height: 12px; border-radius: 999px; background: var(--rule); overflow: hidden; }
+.share-t i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--forest), var(--green)); border-radius: 999px; transition: width .35s var(--ease); }
+.share span { display: block; margin-top: 6px; font-size: 13.5px; color: var(--slate); }
+.share b { color: var(--forest); font-size: 16px; }
 @media (prefers-reduced-motion: reduce) {
-  .rv, .hero .kicker, .hero h1 .ln, .hero .lead, .hero .scope, .hero-fig, .sum > div, .hero .cue, .hero-cmp .cmp tbody tr, .flag .cmp tbody tr, .flag .tbl tbody tr, .flag .shift-call, .formula .f-t { opacity: 1 !important; transform: none !important; }
+  .rv, .cview .cv-t, .hero .kicker, .hero h1 .ln, .hero .lead, .hero .scope, .hero-fig, .sum > div, .hero .cue, .hero-cmp .cmp tbody tr, .flag .cmp tbody tr, .flag .tbl tbody tr, .flag .shift-call, .formula .f-t { opacity: 1 !important; transform: none !important; }
   .flag .rank, .ch > header .chno, .flag .cmp .eq, .hero-cmp .cmp .eq { transform: none !important; }
   .hero::before, .hero::after { animation: none; }
 }
