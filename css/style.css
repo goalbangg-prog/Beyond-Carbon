@@ -597,6 +597,13 @@ input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 
 .tbl.cant td:first-child { width: 22%; color: var(--forest); }
 .tbl.cant td:last-child { width: 24%; color: var(--green); font-weight: 600; }
 .claim.rv:nth-child(2) { transition-delay: .12s; } .claim.rv:nth-child(3) { transition-delay: .24s; }
+
+/* 3장 4번 */
+.fl-list { margin: 10px 0 0; padding-left: 18px; font-size: 14.5px; color: #2E4337; }
+.fl-list li { margin: 4px 0; }
+.fl-list b { color: var(--forest); margin-right: 6px; }
+.flag .tbl tr.chk td { background: var(--amber-soft); }
+.flag .tbl tr.chk td:first-child { box-shadow: inset 3px 0 0 var(--amber); }
 @media (prefers-reduced-motion: reduce) {
   .rv, .impacts > div, .claim, .cview .cv-t, .hero .kicker, .hero h1 .ln, .hero .lead, .hero .scope, .hero-fig, .sum > div, .hero .cue, .hero-cmp .cmp tbody tr, .flag .cmp tbody tr, .flag .tbl tbody tr, .flag .shift-call, .formula .f-t { opacity: 1 !important; transform: none !important; }
   .flag .rank, .ch > header .chno, .flag .cmp .eq, .hero-cmp .cmp .eq { transform: none !important; }
