@@ -139,7 +139,7 @@
     requestAnimationFrame(() => document.querySelector('.hero').classList.add('go'));
   }
 
-  /* ---------- 탄소발자국 칸만 보기 / 7개 범주 모두 보기 ---------- */
+  /* ---------- 탄소발자국만 보기 / 7개 범주 모두 보기 ---------- */
   function carbonView() {
     const box = $('cview'); if (!box) return;
     const tiles = [...box.querySelectorAll('.cv-t')];
@@ -151,8 +151,8 @@
       const n = mode === 'carbon' ? tiles.filter(t => t.classList.contains('cin')).length : tiles.length;
       L.count($('cvN'), n, 0, 600);
       $('cvMsg').innerHTML = mode === 'carbon'
-        ? `탄소발자국 칸만 보면 <b>${tiles.length - n}건</b>은 드러나지 않는다. 보이는 2건도 파티클보드·우드칩의 칸 밀림은 놓친다.`
-        : `7개 범주를 모두 보면 <b>${tiles.length}건</b>이 모두 드러난다. 물발자국과 오존층영향 칸에서 새로 나타난 값이 많다.`;
+        ? `탄소발자국만 보면 6건 중 <b>${tiles.length - n}건</b>을 놓친다. 보이는 2건도 파티클보드·우드칩의 칸 밀림은 놓친다.`
+        : `7개 범주를 모두 보면 <b>${tiles.length}건</b>이 모두 드러난다. 새로 드러난 4건은 물발자국과 오존층영향에 있었다.`;
     };
     box.querySelectorAll('[data-cv]').forEach(b => b.addEventListener('click', () => set(b.dataset.cv, true)));
     set('carbon');
@@ -356,16 +356,17 @@
         <div class="score" id="score"></div>
         <p class="hint">‘탄소발자국으로 짐작’은 상위 10·20·30% 세 기준 모두에서 큰 원료의 절반 이상이 탄소발자국도 크면 ‘짐작할 수 있다’, 모두 절반이 안 되면 ‘짐작하기 어렵다’, 기준에 따라 다르면 ‘일부만 가능하다’로 적었다. 부영양화는 전체로는 비례하지만(ρ ${CI('부영').rho.toFixed(2)}), 부영양화가 특히 큰 원료들은 탄소발자국이 크지 않은 경우가 많아 ‘일부만 가능’이다.</p>
 
-        <h3 class="sub">탄소발자국 칸만 확인했다면</h3>
-        <p class="sub-lead">3장의 여섯 가지 값은 어느 칸에 있을까. 버튼을 눌러 비교해 보자. 칸 띠의 색은 문제가 있는 범주다(연두: 다른 원료와 같은 값, 주황: 자릿수가 튀거나 칸이 밀린 값).</p>
+        <h3 class="sub">탄소발자국만 봤을 때</h3>
+        <p class="sub-lead">3장의 여섯 가지 값은 어느 범주에 있을까. 버튼을 눌러 비교해 보자. 빨간 칸이 문제가 있는 범주다.</p>
         <div class="cview carbon" id="cview">
           <div class="cv-ctl">
-            <div class="seg" role="group" aria-label="보기 전환"><button type="button" data-cv="carbon" aria-pressed="true">탄소발자국 칸만 보기</button><button type="button" data-cv="all" aria-pressed="false">7개 범주 모두 보기</button></div>
-            <div class="cv-count"><b id="cvN">2</b><span>/ 6건이 보인다</span></div>
+            <div class="seg" role="group" aria-label="보기 전환"><button type="button" data-cv="carbon" aria-pressed="true">탄소발자국만 보기</button><button type="button" data-cv="all" aria-pressed="false">7개 범주 모두 보기</button></div>
+            <div class="cv-count"><span>찾은 문제</span><b id="cvN">2</b><span>/ 6건</span></div>
           </div>
-          <div class="cv-grid">${CVF.map((f, i) => `<article class="cv-t${f.has.includes('탄소') ? ' cin' : ''}" style="--i:${i}"><header><span class="rank">${f.n}</span><div><h4>${f.t}</h4><p>${f.s}</p></div></header>
-            <div class="strip">${CVK.map(([k, lb]) => `<i data-k="${k}" class="${f.same.includes(k) ? 'same' : f.odd.includes(k) ? 'odd' : ''}"><em>${lb}</em></i>`).join('')}</div>
-            ${f.part ? `<small class="cv-part">탄소발자국 칸에서는 같은 값만 보이고, 칸 밀림은 안 보인다</small>` : ''}</article>`).join('')}</div>
+          <div class="cv-key"><span><i class="k-same">=</i>다른 원료와 값이 똑같음</span><span><i class="k-odd">!</i>자릿수가 튀거나 칸이 밀림</span><span><i class="k-ok"></i>문제 없음 또는 빈 값</span></div>
+          <div class="cv-grid">${CVF.map((f, i) => `<article class="cv-t${f.has.includes('탄소') ? ' cin' : ''}" style="--i:${i}"><span class="cv-badge found">문제 발견</span><span class="cv-badge miss">놓침</span><header><span class="rank">${f.n}</span><div><h4>${f.t}</h4><p>${f.s}</p></div></header>
+            <div class="strip">${CVK.map(([k, lb]) => `<i data-k="${k}" class="${f.same.includes(k) ? 'same' : f.odd.includes(k) ? 'odd' : ''}"><b>${f.same.includes(k) ? '=' : f.odd.includes(k) ? '!' : ''}</b><em>${lb}</em></i>`).join('')}</div>
+            ${f.part ? `<small class="cv-part">탄소발자국만 보면 같은 값은 보이지만, 칸 밀림은 안 보인다</small>` : ''}</article>`).join('')}</div>
           <p class="cv-msg" id="cvMsg"></p>
         </div>
         <p class="concl">탄소발자국과 다른 영향은 비례하지 않는 경우가 많았고, 원자료에서 다시 확인할 값도 <b>6건 중 4건이 탄소발자국이 아닌 칸</b>에 있었다. 평가계수는 탄소발자국만이 아니라 <b>7개 범주를 모두 같은 방식으로 확인</b>해야 한다.</p>
