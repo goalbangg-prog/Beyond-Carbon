@@ -103,6 +103,24 @@ mark { background: linear-gradient(transparent 52%, var(--lime) 52%); color: inh
 select { font: 500 14.5px var(--sans); color: var(--ink); background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-s); padding: 7px 10px; width: 100%; }
 label { display: block; font-size: 13.5px; font-weight: 600; color: var(--slate); margin-bottom: 6px; }
 
+/* 첫 화면 범위 안내 */
+.hero .scope { display: inline-block; margin-top: 4px; font-size: 14px; color: var(--lime); border: 1px solid rgba(198, 224, 90, .35); border-radius: var(--r-s); padding: 8px 12px; max-width: 62ch; }
+
+/* 2장: 말하지 않는 것 */
+.formula { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 14px; background: var(--forest); color: #E8F1E5; border-radius: var(--r-m); padding: 26px 30px; font-size: 18px; }
+.f-l { font-weight: 800; color: #fff; font-size: 20px; }
+.f-eq, .f-p { color: #9FB9A6; font-weight: 700; }
+.f-t { display: inline-flex; align-items: center; gap: 8px; background: rgba(255, 255, 255, .07); border-radius: 999px; padding: 7px 14px; }
+.f-t b { font-weight: 700; color: #DCE9D8; }
+.f-t i { font-style: normal; color: #9FB9A6; }
+.formula .k { color: var(--forest); background: var(--lime); border-radius: 4px; padding: 0 6px; }
+.f-note { flex-basis: 100%; margin: 6px 0 0; font-size: 14.5px; color: #C5D8C9; }
+.limits { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 20px; }
+.limits > div { background: var(--surface); border: 1px solid var(--rule); border-top: 4px solid var(--forest); border-radius: var(--r-m); padding: 20px 22px; }
+.limits h3 { font-size: 16.5px; color: var(--forest); margin-bottom: 8px; }
+.limits p { margin: 0; font-size: 15px; color: #2E4337; }
+.note b { color: var(--forest); }
+
 /* 1장: 스크롤 이야기 */
 .story { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 40px; }
 .st-sticky { position: sticky; top: 96px; }
