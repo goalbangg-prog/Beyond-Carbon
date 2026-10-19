@@ -573,8 +573,32 @@ input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 
 .impacts.rv > div { opacity: 0; transform: translateY(14px); transition: opacity .5s ease, transform .6s var(--ease); transition-delay: var(--d); }
 .impacts.rv.in > div { opacity: 1; transform: none; }
 .hero-note b { color: var(--lime); }
+
+/* 1장: 한눈에 보는 사실 */
+.facts { display: grid; gap: 14px; }
+.facts > div { background: var(--forest); color: #DCE9D8; border-radius: var(--r-m); padding: 18px 22px; display: grid; grid-template-columns: 110px 1fr; gap: 16px; align-items: center; }
+.facts b { font-size: 32px; font-weight: 800; color: var(--lime); letter-spacing: -0.03em; }
+.facts span { font-size: 14.5px; }
+
+/* 6장: 주장 · 근거 · 믿을 수 있는 정도 */
+.claims { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.claim { background: var(--surface); border: 1px solid var(--rule); border-top: 4px solid var(--forest); border-radius: var(--r-m); padding: 20px 22px; }
+.cl-no { display: inline-block; font-size: 12px; font-weight: 800; color: var(--forest); background: var(--lime); border-radius: 999px; padding: 3px 10px; }
+.claim h3 { font-size: 17.5px; color: var(--forest); margin: 10px 0 12px; line-height: 1.4; }
+.claim dl { margin: 0; display: grid; gap: 12px; }
+.claim dt { font-size: 12.5px; font-weight: 700; color: var(--green); margin-bottom: 2px; }
+.claim dd { margin: 0; font-size: 14px; color: #2E4337; line-height: 1.6; }
+.lv { display: inline-block; font-size: 12px; font-weight: 800; border-radius: 4px; padding: 1px 8px; margin-right: 6px; }
+.lv.hi { background: var(--forest); color: var(--lime); }
+.lv.mid { background: var(--amber-soft); color: #9A4F0B; box-shadow: inset 0 0 0 1px var(--amber); }
+.tbl.cant { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-m); overflow: hidden; }
+.tbl.cant th { background: var(--paper); padding: 12px 14px; }
+.tbl.cant td { padding: 14px; font-size: 14px; color: #2E4337; line-height: 1.6; }
+.tbl.cant td:first-child { width: 22%; color: var(--forest); }
+.tbl.cant td:last-child { width: 24%; color: var(--green); font-weight: 600; }
+.claim.rv:nth-child(2) { transition-delay: .12s; } .claim.rv:nth-child(3) { transition-delay: .24s; }
 @media (prefers-reduced-motion: reduce) {
-  .rv, .impacts > div, .cview .cv-t, .hero .kicker, .hero h1 .ln, .hero .lead, .hero .scope, .hero-fig, .sum > div, .hero .cue, .hero-cmp .cmp tbody tr, .flag .cmp tbody tr, .flag .tbl tbody tr, .flag .shift-call, .formula .f-t { opacity: 1 !important; transform: none !important; }
+  .rv, .impacts > div, .claim, .cview .cv-t, .hero .kicker, .hero h1 .ln, .hero .lead, .hero .scope, .hero-fig, .sum > div, .hero .cue, .hero-cmp .cmp tbody tr, .flag .cmp tbody tr, .flag .tbl tbody tr, .flag .shift-call, .formula .f-t { opacity: 1 !important; transform: none !important; }
   .flag .rank, .ch > header .chno, .flag .cmp .eq, .hero-cmp .cmp .eq { transform: none !important; }
   .hero::before, .hero::after { animation: none; }
 }

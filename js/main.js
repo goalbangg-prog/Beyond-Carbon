@@ -7,7 +7,7 @@
     names.forEach(n => L.$(n).classList.toggle('hidden', n !== name));
     const pane = L.$(name), t = L.tabs[name];
     try { if (!t.built) { t.build(); t.built = true; } }
-    catch (e) { pane.innerHTML = '<p class="empty">화면을 만드는 중 오류가 발생했다: ' + L.esc(e.message) + '</p>'; console.error(e); }
+    catch (e) { pane.innerHTML = '<p class="empty">화면을 만드는 중 오류가 생겼어요: ' + L.esc(e.message) + '</p>'; console.error(e); }
     pane.classList.remove('enter'); void pane.offsetWidth; if (!L.reduce) pane.classList.add('enter');
     window.scrollTo(0, 0);
   }

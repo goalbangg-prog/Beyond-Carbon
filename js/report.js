@@ -4,11 +4,6 @@
   const LENSES = ['물', '부영', '스모그', '자원', '산성'];
   const CI = k => RES.carbon_rho_ci[RKEY[k]], CAP = k => RES.screening_capture[RKEY[k]];
   const CUT = k => RES.cutoff_curve[RKEY[k]], cutAt = (k, q) => CUT(k).find(r => r.q === q);
-  // 순위상관 ρ를 말로 바꾼다
-  const relWord = r => (r >= 0.7 ? '비례해요' : r >= 0.4 ? '약하게 비례해요' : r > 0.1 ? '거의 비례하지 않아요' : '관계를 알 수 없어요');
-  // 탄소발자국 순위로 이 영향의 순위를 짐작할 수 있나: 상위 10·20·30% 모두에서 절반 이상이 같은 원료면 ‘있다’, 모두 절반 미만이면 ‘어렵다’
-  const ANSWER = { '잘 맞음': ['ok', '짐작할 수 있어요'], '기준에 따라 다름': ['mid', '일부만 가능해요'], '어긋남': ['no', '짐작하기 어려워요'] };
-  const answer = k => ANSWER[RES.verdict[RKEY[k]]];
 
   /* ---------- 순위 비교 그래프 (스크롤에 따라 단계별로 바뀜) ---------- */
   const SW = 600, SH = 560, m = { l: 54, r: 16, t: 20, b: 50 }, iw = SW - m.l - m.r, ih = SH - m.t - m.b;
@@ -80,20 +75,6 @@
     step = 0; draw();
   }
 
-  /* ---------- 영향범주별 결과표 ---------- */
-  function scorecard() {
-    const rows = [...LENSES].sort((a, b) => CI(b).rho - CI(a).rho);
-    $('score').innerHTML = `<div class="sc-h"><span>영향범주</span><span>탄소발자국과 함께 커지는 정도<small>1이면 순서가 똑같고 0이면 관계가 없어요</small></span><span>이 영향이 큰 재료 중 탄소발자국도 큰 재료<small>상위 20% 기준, 세로선은 관계가 없어도 우연히 나오는 20%</small></span><span>상위 10·20·30%로 바꿔 봐도</span><span>탄소발자국만 보고 짐작하면</span></div>` +
-      rows.map(k => {
-        const ci = CI(k), c = CAP(k), [vc, vt] = answer(k);
-        return `<div class="sc-r ${vc}"><b class="sc-n">${NAME[k]}</b>
-          <div class="rho"><div class="track"><i class="ci" style="left:${ci.lo * 100}%;width:${(ci.hi - ci.lo) * 100}%"></i><i class="pt" style="left:${ci.rho * 100}%"></i></div><span><b>${ci.rho.toFixed(2)}</b> ${relWord(ci.rho)}</span></div>
-          <div class="capb"><div class="track"><i class="fill" style="--v:${c['포착률']}%"></i><i class="ci" style="left:${c.lo}%;width:${c.hi - c.lo}%"></i><i class="base"></i></div><span><b>${c['다른영향상위']}종 중 ${c['함께상위']}종</b> (${c['포착률']}%)</span></div>
-          <div class="tri">${[10, 20, 30].map(q => { const r = cutAt(k, q); return `<span class="${r.rate >= 50 ? 'hi' : 'lo'}" title="상위 ${q}%: ${r.top}종 중 ${r.both}종">${r.rate}%</span>`; }).join('')}</div>
-          <span class="tag ${vc}">${vt}</span></div>`;
-      }).join('');
-    L.onView($('score'), () => $('score').classList.add('drawn'));
-  }
 
   /* ---------- 원자료에서 다시 확인할 값 ---------- */
   function pairTable(p) {
@@ -125,7 +106,7 @@
 
   /* ---------- 스크롤 등장 효과 ---------- */
   function reveal() {
-    const SEL = '.ch > header, .ch > .lead, .impacts, .ch > .hint, .ch > .note, .ch > .sub, .ch > .sub-lead, .ch > .concl, .cview, .methods li, .flag, .ex, .checklist, .checklist li, .ck, .yesno > div, .next, .dec details, .formula, .score, .sc-why, .more-box, .data-grid > *, .story';
+    const SEL = '.ch > header, .ch > .lead, .impacts, .facts > div, .claim, .cant, .ch > .hint, .ch > .note, .ch > .sub, .ch > .sub-lead, .ch > .concl, .cview, .methods li, .flag, .ex, .checklist, .checklist li, .ck, .yesno > div, .next, .dec details, .formula, .data-grid > *, .story';
     const els = [...document.querySelectorAll('#report ' + SEL)];
     const groups = new Map();
     els.forEach(el => { el.classList.add('rv'); const k = el.parentElement; groups.set(k, (groups.get(k) || 0) + 1); el.style.setProperty('--d', ((groups.get(k) - 1) % 6) * 90 + 'ms'); });
@@ -189,7 +170,6 @@
     const ozMiss = 100 - Math.round(L.coverage(POOL, 6) * 100), ozN = L.has(POOL, 6).length;
     const nb = RES.carbon_water_without_basic_chem;
     const w = CAP('물'), a = CAP('산성');
-    const basicShare = Math.round(POOL.filter(r => r.category === '기초화학물질').length / POOL.length * 100);
     const sel = RES.selection, rv = RES.review, rs = RES.review_sensitivity;
     const wire = rv.extreme.find(x => x.name.startsWith('기기선')), sand = rv.extreme.find(x => x.name === '하천모래');
     const wireRow = POOL.find(r => r.name.startsWith('기기선')), pvcRow = POOL.find(r => r.name === 'PVC 전선');
@@ -207,11 +187,7 @@
     const kgAgg = 800, ex2S = kgAgg * sand.value, ex2F = kgAgg * fineAgg;
 
     // 단계별 개요 (전체 398건)
-    const STAGE_PLAIN = { '원료 및 에너지 생산': '재료·에너지를 만들 때', '연료원별 사용': '연료를 태울 때', '화학반응공정': '화학 반응이 일어날 때', '폐기물 처리': '버리고 처리할 때', '수송': '실어 나를 때' };
-    const stageRows = L.STAGES.map(st => {
-      const rows = D.filter(r => r.stage === st);
-      return { st, n: rows.length, units: new Set(rows.map(r => r.unit)).size, all7: rows.filter(r => r.v.every(v => v != null)).length, cOnly: rows.filter(r => r.v[0] != null && r.v.filter(v => v != null).length === 1).length };
-    });
+    const cOnlyN = D.filter(r => r.v[0] != null && r.v.filter(v => v != null).length === 1).length, unitN = new Set(D.filter(r => r.stage === '원료 및 에너지 생산').map(r => r.unit)).size;
     const IMPACTS = [
       ['탄소발자국', '온실가스를 얼마나 내보내는지'], ['물발자국', '물을 얼마나 쓰는지'], ['자원발자국', '광물·화석 자원을 얼마나 쓰는지'],
       ['산성비', '산성비를 만드는 물질을 얼마나 내보내는지'], ['부영양화', '강과 호수에 녹조를 일으키는 물질'], ['광화학스모그', '여름철 스모그를 만드는 물질'], ['오존층영향', '오존층을 파괴하는 물질']
@@ -220,12 +196,7 @@
       ['리포트의 중심', '의심스러운 숫자 찾기를 앞에, 영향 비교를 뒤에 뒀어요', '평가계수는 컨설턴트가 재료 사용량에 그대로 곱해서 쓰는 숫자예요. 하나만 틀려도 제품 결과가 통째로 바뀌어요. 재료끼리 비교하는 것보다 이쪽이 실무에 바로 쓰여요.', '처음에는 탄소발자국과 물발자국 비교를 주제로 삼았어요. 그런데 재료 숫자끼리의 관계라 “그래서 제품은요?”라는 질문에 답하기 어려웠어요.'],
       ['6건의 순서', '실수일 가능성과 계산에 주는 영향을 함께 보고 정했어요', '납·염소처럼 전혀 다른 재료의 숫자가 모두 같으면 우연으로 보기 어려워요. 기기선은 실수라면 제품 결과를 수천 배 바꿔요. 불소 화합물처럼 만드는 과정을 생각하면 설명이 되는 숫자는 뒤에 뒀어요.', '찾은 순서대로 늘어놓으면 덜 중요한 숫자가 앞에 와요.'],
       ['6건의 처리', '오류라고 쓰지 않고, 분석에서도 빼지 않았어요', '원본 자료와 맞춰 보기 전에는 실수인지 알 수 없어요. 대신 이 숫자들을 뺀 결과를 따로 계산해 비교했어요.', '마음대로 빼거나 고치면 원자료를 바꾼 분석이 돼요.'],
-      ['1만 배 기준', '중앙값의 1만 배 이상, 1만분의 1 이하만 골랐어요', `같은 항목 안에서도 수천 배 차이는 흔해요. 물발자국 2위인 ${pcb.name}도 중앙값의 약 ${Math.round(pcb.v[4] / wMed / 100) * 100}배예요. 그보다 확실히 튀는 숫자만 고르려고 1만 배로 정했어요.`, '기준을 1천 배로 낮추면 원래 큰 게 자연스러운 숫자까지 섞여요.'],
-      ['결론의 범위', '재료 1kg당 숫자에 대한 이야기로 한정했어요', '제품의 환경영향은 재료마다 ‘사용량 × 1kg당 숫자’를 더해서 계산해요. 이 자료에는 사용량이 없어서 제품끼리의 관계는 알 수 없어요. 4장의 제품 계산은 가상의 예예요.', '재료 숫자의 관계를 제품의 관계처럼 쓰게 돼요.'],
-      ['비교 대상', '재료 단계의 1kg당 숫자 187종만 비교했어요', `단계마다 기준이 되는 양이 달라요. 재료 단계 ${nStage}건 중 ${nKg}건이 1kg당 숫자이고, 나머지는 1개당(${sel.stage_units.ea}건) 등이에요. 다이오드(1개당)와 트랜지스터(1kg당)를 한 줄에 세우면 재료가 아니라 단위가 순서를 정해요. 공업용수·상수는 재료가 아니라서 뺐고, 오존층영향은 ${POOL.length}종 중 ${ozN}종에만 숫자가 있어(${ozMiss}% 비어 있음) 비교에서 뺐어요.`, `공업용수·상수를 넣어도 탄소발자국–물발자국 관계(ρ)는 ${sel.rho_with_utility_water.toFixed(2)}로 비슷해요.`],
-      ['비교 방법', '크기 대신 순서로, 두 숫자가 모두 있는 재료끼리 비교했어요', '같은 항목 안에서도 숫자가 수십만 배까지 차이 나요. 크기로 비교하면 큰 숫자 몇 개가 결과를 정해요. 또 숫자가 있는 재료 수가 항목마다 달라서(탄소발자국 187종, 물발자국 163종) 둘 다 있는 재료끼리 순서를 매겼어요. ‘해당없음’은 0으로 채우지 않았어요.', '평균을 쓰면 아주 큰 숫자 몇 개에 결과가 끌려가요.'],
-      ['상위 20% 기준', '모든 항목에서 상위 재료가 30종 이상 되는 가장 작은 기준이에요', `30종이면 재료 1종이 바뀔 때 비율이 약 3%p 움직이지만, 15종이면 약 7%p씩 움직여요. 15% 기준이면 가장 작은 그룹이 ${RES.cutoff_min_top['15']}종, 10%면 ${RES.cutoff_min_top['10']}종이에요.`, '20% 하나만 보면 기준에 따라 결과가 달라지는 경우를 놓쳐요. 그래서 10·20·30%를 함께 봤어요.'],
-      ['재료 종류 차이', '재료 종류별로, 가장 많은 종류를 빼고 다시 계산했어요', `기초화학물질을 빼도 탄소발자국–물발자국 관계(ρ)는 ${nb.rho.toFixed(2)}(${nb.n}종)였어요.`, '특정 재료 종류 때문에 생긴 결과였다면 결론이 바뀌었을 거예요.']
+      ['1만 배 기준', '중앙값의 1만 배 이상, 1만분의 1 이하만 골랐어요', `같은 항목 안에서도 수천 배 차이는 흔해요. 물발자국 2위인 ${pcb.name}도 중앙값의 약 ${Math.round(pcb.v[4] / wMed / 100) * 100}배예요. 그보다 확실히 튀는 숫자만 고르려고 1만 배로 정했어요.`, '기준을 1천 배로 낮추면 원래 큰 게 자연스러운 숫자까지 섞여요.']
     ];
     const chapters = [['c1', '이 숫자표는 뭔가요'], ['c2', '어떻게 찾았나요'], ['c3', '의심스러운 숫자 6개'], ['c4', '결과가 얼마나 바뀔까요'], ['c5', '탄소만 보면 될까요'], ['c6', '결과 확인과 한계'], ['c7', '분석하며 내린 판단']];
     const steps = [
@@ -285,11 +256,7 @@
             <tr><th>이용 조건</th><td>제한 없음 <span class="muted">(2026-10-19 확인)</span></td></tr>
             <tr><th>원문</th><td><a href="https://www.data.go.kr/data/15120968/fileData.do" target="_blank" rel="noopener">공공데이터포털에서 보기</a></td></tr>
           </tbody></table>
-          <figure class="fig"><figcaption>언제 생기는 영향인지에 따라 나눠 보면</figcaption>
-            <table class="tbl stages"><thead><tr><th>단계</th><th class="num">개수</th><th class="num">단위 종류</th><th class="num">7가지가 다 있음</th><th class="num">탄소발자국만 있음</th></tr></thead><tbody>
-              ${stageRows.map(r => `<tr><td>${STAGE_PLAIN[r.st]}</td><td class="num"><b>${r.n}</b></td><td class="num">${r.units}</td><td class="num">${r.all7}</td><td class="num">${r.cOnly}</td></tr>`).join('')}
-            </tbody></table>
-            <p class="read">한 단계 안에서도 ‘1kg당’, ‘1개당’, ‘1MJ당’ 숫자가 섞여 있어요. 연료와 화학 반응 쪽은 대부분 탄소발자국만 있어요.</p></figure>
+          <div class="facts"><div><b>${cOnlyN}개</b><span>탄소발자국 숫자만 있고 나머지 6가지는 빈칸이에요 (연료를 태울 때, 화학 반응이 일어날 때 등)</span></div><div><b>${unitN}가지</b><span>단위가 섞여 있어요. 같은 ‘재료’ 단계 안에서도 1kg당, 1개당, 1MJ당 숫자가 함께 있어요</span></div></div>
         </div>
       </section>
 
@@ -357,9 +324,6 @@
           <div class="st-fig"><div class="st-sticky"><figure class="plotcard" id="stPlot"></figure><div class="meter" id="stMeter"></div></div></div>
           <div class="st-steps">${steps.map(([code, h, t], i) => `<article class="step" data-step="${code}"><span class="sn">${i + 1} / ${steps.length}</span><h3>${h}</h3><p>${t}</p></article>`).join('')}</div>
         </div>
-        <h3 class="sub">다섯 가지 영향을 한눈에</h3>
-        <div class="score" id="score"></div>
-        <p class="hint">‘짐작할 수 있어요’는 상위 10·20·30% 어느 기준으로 봐도 그 영향이 큰 재료의 절반 이상이 탄소발자국도 크다는 뜻이에요. 부영양화는 전체로는 탄소와 함께 움직이지만, 부영양화가 특히 큰 재료들은 탄소발자국이 크지 않은 경우가 많아서 ‘일부만 가능’이에요.</p>
 
         <h3 class="sub">탄소발자국만 봤을 때</h3>
         <p class="sub-lead">3장의 의심스러운 숫자 6개는 어느 항목에 있을까요? 버튼을 눌러 비교해 보세요. 빨간 칸이 문제가 있는 항목이에요.</p>
@@ -378,42 +342,41 @@
       </section>
 
       <section class="ch" id="c6"><header><span class="chno">6</span><h2>결과 확인과 한계</h2></header>
-        <p class="lead">5장의 결과가 우연은 아닌지 세 가지로 확인했어요. <b>어느 경우에도 물발자국은 탄소발자국과 거의 따로 움직였어요.</b></p>
-        <div class="checks">
-          <div class="ck"><h3>재료를 다시 뽑아 계산해도</h3><p>재료 목록을 무작위로 다시 뽑아 2,000번 계산해도 탄소–물 관계(ρ)는 <b>${CI('물').lo.toFixed(2)}~${CI('물').hi.toFixed(2)}</b> 사이였어요.</p></div>
-          <div class="ck"><h3>가장 많은 재료 종류를 빼도</h3><p>재료의 ${basicShare}%를 차지하는 기초화학물질을 빼도 ρ는 <b>${nb.rho.toFixed(2)}</b>(${nb.n}종)였어요.</p></div>
-          <div class="ck"><h3>의심스러운 숫자를 빼도</h3><p>1·2·3·6번 재료 ${rs.strong.excluded.length}종을 빼면 ρ는 <b>${rs.strong['물소모'].rho.toFixed(2)}</b>, 1·2·3·4·6번 재료 ${rs.all.excluded_n}종을 빼면 <b>${rs.all['물소모'].rho.toFixed(2)}</b>였어요.</p></div>
+        <p class="lead">이 분석이 주장하는 것은 세 가지예요. 각각 <b>무엇을 근거로 했는지</b>, <b>어떻게 확인했는지</b>, <b>어디까지 믿을 수 있는지</b> 정리했어요.</p>
+        <div class="claims">
+          <article class="claim"><span class="cl-no">주장 1</span><h3>숫자표에 원본과 맞춰 봐야 할 숫자가 있어요</h3>
+            <dl><div><dt>근거</dt><dd>납·염소는 다섯 가지 숫자가 소수점 아홉 자리까지 같고, ${D.length}개 중 이런 쌍은 하나뿐이에요. 파티클보드·우드칩은 같은 숫자가 서로 다른 칸에 있고, 그 옆 칸은 서로 엇갈려 비어 있어요.</dd></div>
+            <div><dt>확인한 방법</dt><dd>눈에 띈 몇 개만 본 게 아니라, 네 가지 기준을 정해 ${D.length}개 전체에 똑같이 적용했어요.</dd></div>
+            <div><dt>믿을 수 있는 정도</dt><dd><span class="lv hi">높음</span> 숫자 자체는 원자료 그대로라 누가 다시 봐도 같아요. 다만 ‘실수’인지는 원본을 봐야 알 수 있어요.</dd></div></dl></article>
+          <article class="claim"><span class="cl-no">주장 2</span><h3>그 숫자를 그대로 쓰면 결과가 크게 바뀔 수 있어요</h3>
+            <dl><div><dt>근거</dt><dd>가상의 가전에 전선 20g만 넣어도 물발자국이 약 1,800배 달라지고, 콘크리트 모래 예시에서는 재활용 골재가 약 1,400배 불리하게 계산돼요.</dd></div>
+            <div><dt>확인한 방법</dt><dd>전선 무게를 1g~100g으로 바꿔도 결과 대부분이 전선에서 나오는 것을 확인했어요(4장 막대).</dd></div>
+            <div><dt>믿을 수 있는 정도</dt><dd><span class="lv mid">중간</span> 계산 자체는 확실하지만, 재료 양은 설명을 위해 정한 가정이에요. 실제 차이는 제품마다 달라요.</dd></div></dl></article>
+          <article class="claim"><span class="cl-no">주장 3</span><h3>탄소발자국만 확인하면 문제를 놓쳐요</h3>
+            <dl><div><dt>근거</dt><dd>의심스러운 숫자 6건 중 4건이 탄소발자국이 아닌 칸에 있어요. 또 물발자국은 탄소발자국과 거의 따로 움직였어요(관계를 나타내는 숫자 ρ ${CI('물').rho.toFixed(2)}, 1이면 순서가 똑같고 0이면 관계없음).</dd></div>
+            <div><dt>확인한 방법</dt><dd>재료를 무작위로 다시 뽑아 2,000번 계산해도(ρ ${CI('물').lo.toFixed(2)}~${CI('물').hi.toFixed(2)}), 가장 많은 재료 종류를 빼도(${nb.rho.toFixed(2)}), 의심스러운 숫자를 빼도(${rs.strong['물소모'].rho.toFixed(2)}) 결론이 같았어요. 자세한 내용은 방법·출처 탭에 있어요.</dd></div>
+            <div><dt>믿을 수 있는 정도</dt><dd><span class="lv hi">높음</span> 재료 1kg당 숫자에 대해서는요. 완성된 제품에서도 그런지는 아래 ‘말할 수 없는 것’을 보세요.</dd></div></dl></article>
         </div>
-        <h3 class="sub">읽을 때 주의할 점</h3>
-        <div class="formula" aria-label="제품의 물발자국은 재료마다 사용량 곱하기 1kg당 숫자를 모두 더한 값">
-          <span class="f-l">제품의 물발자국</span><span class="f-eq">=</span>
-          <span class="f-t"><b>재료 A 사용량</b><i>×</i><b class="k">A의 1kg당 물발자국</b></span><span class="f-p">+</span>
-          <span class="f-t"><b>재료 B 사용량</b><i>×</i><b class="k">B의 1kg당 물발자국</b></span><span class="f-p">+ …</span>
-          <p class="f-note">이 분석은 <b class="k">1kg당 숫자</b>만 다뤘어요. 사용량은 제품마다 다르고, 이 자료에는 없어요.</p>
-        </div>
-        <div class="yesno">
-          <div class="yes"><h3>이 분석으로 말할 수 있는 것</h3><ul>
-            <li>숫자표에서 원본과 맞춰 봐야 할 숫자와 그 이유</li>
-            <li>그 숫자를 그대로 쓰면 제품 계산이 얼마나 달라질 수 있는지 (가상의 예)</li>
-            <li>재료 1kg당 숫자에서 탄소발자국과 함께 움직이는 영향, 따로 움직이는 영향</li>
-            <li>의심스러운 숫자 6건 중 4건이 탄소발자국이 아닌 칸에 있다는 것</li></ul></div>
-          <div class="no"><h3>말할 수 없는 것</h3><ul>
-            <li>3장의 숫자가 실제로 오류인지 (원본 확인 전)</li>
-            <li>완성된 제품끼리 비교해도 같은 결과가 나오는지</li>
-            <li>어느 재료가 더 친환경적인지</li>
-            <li>숫자가 얼마나 정확한지(오차 정보 없음)와 지금 시점의 숫자 (2021년 기준)</li></ul></div>
-        </div>
-        <div class="next"><h3>다음 단계</h3><p>3장의 숫자를 국가 LCI DB 원본과 맞춰 보고, 한국환경산업기술원에 문의해 확인할 계획이에요. 그다음 실제 제품 하나를 정해 재료 사용량까지 넣어 계산하면 결과가 얼마나 달라지는지 볼 거예요.</p></div>
+
+        <h3 class="sub">이 분석으로 말할 수 없는 것</h3>
+        <table class="tbl cant"><thead><tr><th>말할 수 없는 것</th><th>왜 말할 수 없나요</th><th>확인하려면</th></tr></thead><tbody>
+          <tr><td><b>6건이 실제로 오류인지</b></td><td>공개된 숫자표만 봤고, 이 숫자를 만든 원본 자료(국가 LCI DB)와는 아직 맞춰 보지 않았어요. 특히 4~6번은 같은 계열 자료를 썼거나 만드는 과정상 원래 큰 숫자일 수도 있어요.</td><td>국가 LCI DB 원본과 대조하고, 한국환경산업기술원에 문의</td></tr>
+          <tr><td><b>실제 제품의 결과가 얼마나 바뀌는지</b></td><td>4장의 제품은 가상의 예예요. 결과는 그 재료를 얼마나 쓰느냐에 따라 크게 달라져요.</td><td>실제 제품의 재료 목록과 사용량으로 다시 계산</td></tr>
+          <tr><td><b>완성된 제품끼리도 탄소와 물이 따로 움직이는지</b></td><td>제품의 환경영향은 ‘재료 사용량 × 1kg당 숫자’를 모두 더한 값이에요. 많은 제품이 전기·연료처럼 같은 재료를 함께 쓰기 때문에, 제품 단위에서는 두 숫자가 더 비슷하게 움직일 수도 있어요.</td><td>기능이 같은 제품들의 환경성적표지 결과를 모아 비교</td></tr>
+          <tr><td><b>어느 재료가 더 친환경적인지</b></td><td>1kg당 숫자는 재료마다 쓰임과 필요한 양이 달라서 그대로 비교할 수 없어요. 철 1kg과 플라스틱 1kg은 같은 역할을 하지 않아요.</td><td>같은 기능을 하는 제품 단위(기능단위)로 비교</td></tr>
+          <tr><td><b>숫자가 얼마나 정확하고 지금도 맞는지</b></td><td>숫자표에 오차 정보가 없고, 2021년 8월 기준이에요. 그 뒤 공정이나 전력 구성이 바뀌었을 수 있어요.</td><td>최신 국가 LCI DB와 작성지침으로 확인</td></tr>
+        </tbody></table>
+        <div class="next"><h3>다음 단계</h3><p>먼저 3장의 숫자를 국가 LCI DB 원본과 맞춰 보고 한국환경산업기술원에 문의할 계획이에요. 그다음 실제 제품 하나를 정해 재료 사용량까지 넣어 계산하면, 주장 2의 ‘얼마나 바뀌는지’를 가정 없이 확인할 수 있어요.</p></div>
       </section>
 
       <section class="ch" id="c7"><header><span class="chno">7</span><h2>분석하며 내린 판단</h2></header>
-        <p class="lead">정답이 없는 선택을 할 때마다 이유와, 다르게 했다면 어땠을지 적어 뒀어요. 항목을 누르면 펼쳐져요.</p>
+        <p class="lead">정답이 없는 선택을 할 때마다 이유와, 다르게 했다면 어땠을지 적어 뒀어요. 항목을 누르면 펼쳐져요. 비교 분석에 관한 판단은 <a href="#notes" data-tab-link="notes">방법·출처</a> 탭에 있어요.</p>
         <div class="dec">${decisions.map((d, i) => `<details${i === 0 ? ' open' : ''}><summary><span class="dn">${String(i + 1).padStart(2, '0')}</span><span class="dq">${d[0]}</span><span class="da">${d[1]}</span></summary><div class="db"><p><b>이유</b>${d[2]}</p><p><b>다르게 했다면</b>${d[3]}</p></div></details>`).join('')}</div>
       </section>
       </div>
     </div>`;
 
-    story(); scorecard(); review();
+    story(); review();
 
     const links = [...document.querySelectorAll('.rail a')];
     document.querySelectorAll('[data-go]').forEach(el => el.addEventListener('click', ev => { ev.preventDefault(); $(el.dataset.go).scrollIntoView({ behavior: L.reduce ? 'auto' : 'smooth', block: 'start' }); }));
