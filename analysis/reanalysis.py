@@ -227,6 +227,90 @@ for nm in ["폐목","폐유리","폐지","혼합폐플라스틱","폐금속"]:
 R["waste_pairs"] = pairs
 R["recycling_any_negative"] = bool((ws[ws["구분"]=="재활용"][list(KEY.values())] < 0).any().any())
 
+
+# ---------------------------------------------------------------
+# 17) 데이터 선별 근거 (숫자로 남긴다)
+stage = df[df["대분류"]=="원료 및 에너지 생산"]
+R["selection"] = {
+  "stage_units": stage["단위"].value_counts().to_dict(),
+  "non_kg_items": stage[stage["단위"]!="kg"][["구분","원료_에너지","단위"]].to_dict("records"),
+  "units_by_stage": {k: sorted(map(str, v)) for k, v in df.groupby("대분류")["단위"].unique().to_dict().items()},
+  "carbon_only_by_stage": {st: int((g[list(KEY.values())].notna().sum(axis=1)==1).sum()) for st, g in df.groupby("대분류")},
+  "utility_water": stage[(stage["단위"]=="kg") & (stage["구분"]=="수자원")][["원료_에너지", KEY["탄소"], KEY["물"]]].to_dict("records"),
+  "pool_median": {SHORT[k]: float(base[c].median()) for k, c in KEY.items()},
+}
+st_kg = stage[stage["단위"]=="kg"]
+s = st_kg[[KEY["탄소"], KEY["물"]]].dropna()
+R["selection"]["rho_with_utility_water"] = round(float(spearmanr(s.iloc[:,0], s.iloc[:,1])[0]), 2)
+
+# 18) 상위 기준별 겹침 비율 (10~50%)과 상위 그룹 크기. 무관할 때 기대값 = 기준 비율
+cut = {}
+for k in OTHERS:
+    x = base[[KEY["탄소"], KEY[k]]].dropna().values; rows = []
+    for q in [0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50]:
+        tc = x[:,0] >= np.quantile(x[:,0], 1-q); to = x[:,1] >= np.quantile(x[:,1], 1-q)
+        bs = []
+        for _ in range(1000):
+            xb = x[rng.integers(0, len(x), len(x))]
+            a = xb[:,0] >= np.quantile(xb[:,0], 1-q); o = xb[:,1] >= np.quantile(xb[:,1], 1-q); bs.append((a&o).sum()/o.sum()*100)
+        lo, hi = np.percentile(bs, [2.5, 97.5])
+        rows.append({"q": int(round(q*100)), "top": int(to.sum()), "both": int((tc&to).sum()), "rate": round(float((tc&to).sum()/to.sum()*100), 0), "lo": round(float(lo),0), "hi": round(float(hi),0)})
+    cut[SHORT[k]] = rows
+R["cutoff_curve"] = cut
+R["cutoff_rule"] = "모든 영향에서 상위 그룹이 30종 이상이 되는 가장 작은 기준"
+R["cutoff_min_top"] = {str(r["q"]): min(cut[SHORT[k]][i]["top"] for k in OTHERS) for i, r in enumerate(cut[SHORT["물"]])}
+# 판정: 상위 10·20·30% 모두에서 겹침 50% 이상 → 잘 맞음, 모두 50% 미만 → 어긋남, 섞이면 기준에 따라 다름
+def verdict3(k):
+    rs = [r["rate"] for r in cut[SHORT[k]] if r["q"] in (10, 20, 30)]
+    return "잘 맞음" if min(rs) >= 50 else "어긋남" if max(rs) < 50 else "기준에 따라 다름"
+R["verdict"] = {SHORT[k]: verdict3(k) for k in OTHERS}
+
+# 19) 검토가 필요한 값 (규칙 기반, 오류로 단정하지 않음)
+num = list(KEY.values())
+same_pairs = []
+for i in range(len(df)):
+    for j in range(i+1, len(df)):
+        a, b2 = df.iloc[i][num], df.iloc[j][num]; m = a.notna() & b2.notna()
+        eq = m & np.isclose(a.astype(float).fillna(-1), b2.astype(float).fillna(-2), rtol=1e-9, atol=0)
+        if eq.sum() >= 3:
+            same_pairs.append({"a": df.iloc[i]["원료_에너지"], "a_cat": df.iloc[i]["구분"], "b": df.iloc[j]["원료_에너지"], "b_cat": df.iloc[j]["구분"],
+                               "n_same": int(eq.sum()), "n_both": int(m.sum()),
+                               "a_values": {SHORT[k]: (None if pd.isna(df.iloc[i][c]) else float(df.iloc[i][c])) for k, c in KEY.items()},
+                               "b_values": {SHORT[k]: (None if pd.isna(df.iloc[j][c]) else float(df.iloc[j][c])) for k, c in KEY.items()}})
+shared = []
+for k, c in KEY.items():
+    v = base[c].dropna(); g = v[v.duplicated(keep=False)]
+    for val, idx in g.groupby(g).groups.items():
+        shared.append({"impact": SHORT[k], "value": float(val), "items": [{"name": base.loc[i,"원료_에너지"], "cat": base.loc[i,"구분"]} for i in idx]})
+extreme = []
+for k, c in KEY.items():
+    v = base[c].dropna(); dev = np.log10(v) - np.log10(v.median())
+    for i in v[abs(dev) >= 4].index:
+        extreme.append({"impact": SHORT[k], "name": base.loc[i,"원료_에너지"], "cat": base.loc[i,"구분"], "value": float(v[i]), "times_median": float(10**dev[i])})
+oz = df[KEY["오존"]].dropna()
+ozone_hi = [{"name": df.loc[i,"원료_에너지"], "stage": df.loc[i,"대분류"], "value": float(oz[i])} for i in oz[oz >= 1e-3].sort_values(ascending=False).index]
+R["review"] = {"same_pairs": same_pairs, "shared_values": shared, "extreme": extreme,
+               "ozone_range": [float(oz.min()), float(oz.max())], "ozone_n": int(len(oz)), "ozone_hi": ozone_hi,
+               "rules": {"same_pairs": "서로 다른 항목인데 3개 이상 범주의 값이 소수점 끝자리까지 같음 (전체 398건)",
+                         "shared_values": "원료 풀에서 한 영향범주의 값이 다른 원료와 완전히 같음",
+                         "extreme": "원료 풀에서 영향범주 중앙값의 1만 배 이상 또는 1만분의 1 이하",
+                         "ozone_hi": "오존층영향이 1kg당 0.001 kg CFC-11 eq 이상 (전체 398건)"}}
+
+# 20) 민감도: 검토가 필요한 값을 빼도 결론이 같은가
+flag_strong = set()
+for p_ in same_pairs: flag_strong |= {p_["a"], p_["b"]}
+for e in extreme: flag_strong.add(e["name"])
+flag_all = set(flag_strong)
+for g in shared:
+    for it in g["items"]: flag_all.add(it["name"])
+def rho_cap(exclude, k):
+    d_ = base[~base["원료_에너지"].isin(exclude)][[KEY["탄소"], KEY[k]]].dropna(); x = d_.values
+    tc = x[:,0] >= np.quantile(x[:,0], .8); to = x[:,1] >= np.quantile(x[:,1], .8)
+    return {"rho": round(float(spearmanr(x[:,0], x[:,1])[0]), 2), "rate": round(float((tc&to).sum()/to.sum()*100), 0), "n": int(len(x))}
+R["review_sensitivity"] = {
+  "strong": {"excluded": sorted(flag_strong), **{SHORT[k]: rho_cap(flag_strong, k) for k in OTHERS}},
+  "all": {"excluded_n": len(flag_all), **{SHORT[k]: rho_cap(flag_all, k) for k in OTHERS}}}
+
 out = d[["대분류","구분","원료_에너지","단위"]+fc+["군집"]]
 out.to_csv(f"data/clusters_k{K}.csv", encoding="utf-8-sig", index=True, index_label="행번호")
 json.dump(R, open("data/analysis_results.json","w",encoding="utf-8"), ensure_ascii=False, indent=1)

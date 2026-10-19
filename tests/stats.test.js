@@ -13,3 +13,8 @@ for (const t of ['20', '30', '40', '50', '60']) eq(L.hidden(+t).length, R.hidden
 for (const k of L.OTHERS) { const t = L.top20(k), c = R.screening_capture[L.RKEY[k]]; eq(t.both.length, c['함께상위'], `선별 포착(${k}) 함께 잡힘 = Python`); eq(t.to.size, c['다른영향상위'], `선별 포착(${k}) 상위 수 = Python`); }
 // 순위는 두 값이 모두 있는 원료끼리 매긴다: 영향 쌍마다 백분위 최댓값이 100
 for (const k of L.OTHERS) { const v = Object.values(L.PP[k]); eq(Math.max(...v.map(p => p.c)), 100, `${k} 쌍의 탄소 백분위 최댓값 100`); eq(v.length, R.carbon_rho_ci[L.RKEY[k]].n, `${k} 쌍 원료 수 = Python`); }
+// 검토가 필요한 값: 납과 염소는 5개 범주가 같다
+const pr = R.review.same_pairs.find(p => [p.a, p.b].includes('납'));
+eq(pr ? pr.n_same : 0, 5, '납–염소 5개 범주 일치');
+eq(R.cutoff_min_top['20'] >= 30 && R.cutoff_min_top['15'] < 30 ? 1 : 0, 1, '20%가 상위 그룹 30종 이상인 최소 기준');
+eq(R.verdict['물소모'] === '어긋남' ? 1 : 0, 1, '물발자국 판정 = 어긋남');
