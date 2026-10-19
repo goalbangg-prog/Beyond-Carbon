@@ -2,41 +2,39 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=1240">
-<title>Looply - LCA 데이터 분석</title>
-<meta name="description" content="환경성적표지 평가계수 398개로 만든 LCA 데이터 분석 리포트와 환경영향 계산기">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beyond Carbon · 환경성적표지 평가계수 분석</title>
+<meta name="description" content="환경성적표지(EPD) 평가계수 398건으로, 탄소발자국만 보면 놓치는 환경영향을 확인한 데이터 분석">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+<div class="progress"><i id="progress"></i></div>
 <header class="top"><div class="top-in">
-  <a class="brand" href="#report"><span><span class="dot"></span> Looply</span><small>LCA 데이터 분석</small></a>
+  <a class="brand" href="#report" aria-label="Beyond Carbon 처음으로">
+    <svg viewBox="0 0 28 28" aria-hidden="true"><circle cx="9" cy="19" r="5" fill="#A9B2B8"/><circle cx="19" cy="9" r="5" fill="#C27A0A"/><path d="M3 25 25 3" stroke="#15222D" stroke-width="1.6" stroke-dasharray="2 3"/></svg>
+    <span><b>Beyond Carbon</b><small>환경성적표지 평가계수 분석</small></span></a>
   <nav aria-label="주요 메뉴">
     <button data-tab="report">분석 리포트</button>
-    <button data-tab="calc">환경영향 계산</button>
-    <button data-tab="explore">데이터 분석</button>
-    <button data-tab="cluster">군집 분석</button>
+    <button data-tab="explore">데이터 탐색</button>
     <button data-tab="notes">방법·출처</button>
   </nav>
-  <span class="badge" id="badge"></span>
+  <a class="gh" href="https://github.com/goalbangg-prog/Looply-mini-LCA" target="_blank" rel="noopener">코드 보기</a>
 </div></header>
-<main class="wrap">
-  <div id="report" data-pane="report"></div>
-  <div id="calc" data-pane="calc" class="hidden"></div>
-  <div id="explore" data-pane="explore" class="hidden"></div>
-  <div id="cluster" data-pane="cluster" class="hidden"></div>
-  <div id="notes" data-pane="notes" class="hidden"></div>
-  <p class="foot">자료: 한국환경산업기술원 환경성적표지 평가계수(2021-08-02). 본 페이지는 탐색적 데이터 분석 포트폴리오이며, ISO 14040/14044에 따른 전과정평가(LCA) 또는 인증 결과가 아닙니다. 제품 비교·의사결정에 직접 사용할 수 없으며, 원자료 이용 조건은 별도 확인이 필요합니다.</p>
+<main>
+  <div id="report" class="pane"></div>
+  <div id="explore" class="pane wrap hidden"></div>
+  <div id="notes" class="pane wrap hidden"></div>
 </main>
-<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" onerror="void 0"></script>
+<footer class="foot"><p>자료: 한국환경산업기술원 환경성적표지 평가계수(2021-08-02), 공공데이터포털. 개인 포트폴리오로 만든 탐색적 데이터 분석이며, ISO 14040/14044에 따른 전과정평가나 인증 결과가 아닙니다. 분석·작성: 김수현</p></footer>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <script src="js/data.js"></script>
 <script src="js/results.js"></script>
 <script src="js/stats.js"></script>
 <script src="js/common.js"></script>
 <script src="js/report.js"></script>
-<script src="js/equiv.js"></script>
-<script src="js/calc.js"></script>
 <script src="js/explore.js"></script>
-<script src="js/cluster.js"></script>
 <script src="js/notes.js"></script>
 <script src="js/main.js"></script>
 </body>

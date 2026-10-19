@@ -1,4 +1,4 @@
-/* 데이터 분석 탭 */
+/* 데이터 탐색 탭: 범위·영향·방법을 골라 직접 확인 */
 (function () {
   const { $, esc, fmt, IMP, D, POOL, lbl, plot } = L;
   let scopes = [];
@@ -16,7 +16,7 @@
 
   function build() {
     makeScopes();
-    $('explore').innerHTML = `<div class="panel"><span class="eyebrow">Data Analysis</span><h3>분석 조건</h3>
+    $('explore').innerHTML = `<header class="notes-h"><h1>데이터 탐색</h1><p class="lead">리포트에서 다루지 않은 범위와 영향도 직접 골라 볼 수 있습니다. 단위가 다른 항목은 섞이지 않도록 대분류·단위별로 나눠 두었습니다.</p></header><div class="panel"><h3>분석 조건</h3>
       <div class="grid g3"><div><label for="exScope">분석 범위 (대분류 · 단위)</label><select id="exScope"></select></div>
       <div><label for="exImpact">영향 종류</label><select id="exImpact"></select></div>
       <div><label for="exMode">분석 방법</label><select id="exMode"><option value="rank">순위: 가장 큰 항목과 작은 항목</option><option value="hist">히스토그램: 값이 몰린 구간</option><option value="box">박스플롯: 구분별 비교</option><option value="scatter">산점도: 두 영향의 관계</option><option value="corr">상관행렬: 영향끼리의 관계</option><option value="radar">레이더 차트: 여러 항목 한눈에 비교</option></select></div></div>
@@ -70,13 +70,13 @@
     if (mode === 'rank') {
       const sorted = [...rows].sort((a, b) => b.v[j] - a.v[j]), n = Math.min(12, Math.floor(sorted.length / 2)), sh = [...sorted.slice(0, n), ...sorted.slice(-n)];
       T(`${im.name}: 상위 ${n}개 · 하위 ${n}개`, `${im.sym} / ${s.unit}`);
-      plot('exChart', [{ type: 'bar', orientation: 'h', y: sh.map(lbl), x: sh.map(r => r.v[j]), marker: { color: sh.map((_, i) => (i < n ? '#c4504a' : '#2367d1')) }, hovertemplate: '%{y}<br>%{x:.3g}<extra></extra>' }],
+      plot('exChart', [{ type: 'bar', orientation: 'h', y: sh.map(lbl), x: sh.map(r => r.v[j]), marker: { color: sh.map((_, i) => (i < n ? L.C.ochre : L.C.teal)) }, hovertemplate: '%{y}<br>%{x:.3g}<extra></extra>' }],
         { xaxis: { type: 'log', title: `${im.sym} / ${s.unit} (로그 눈금)` }, yaxis: { automargin: true, autorange: 'reversed' }, margin: { l: 230 } });
       R(`<b>${esc(lbl(sorted[0]))}</b> 항목이 가장 크고 <b>${esc(lbl(sorted[sorted.length - 1]))}</b> 항목이 가장 작습니다. 두 항목은 <b>${times(sorted[0].v[j] / sorted[sorted.length - 1].v[j])}</b> 차이입니다.`);
     } else if (mode === 'hist') {
       const vals = rows.map(r => r.v[j]), med = S.median(vals), p10 = S.quantile(vals, .1), p90 = S.quantile(vals, .9);
       T(`${im.name} 분포`, `${im.sym} / ${s.unit}, 10배 단위 구간(log₁₀)`);
-      plot('exChart', [{ type: 'histogram', x: vals.map(Math.log10), nbinsx: 24, marker: { color: '#2367d1' }, hovertemplate: '10^%{x} 부근: %{y}건<extra></extra>' }],
+      plot('exChart', [{ type: 'histogram', x: vals.map(Math.log10), nbinsx: 24, marker: { color: L.C.teal }, hovertemplate: '10^%{x} 부근: %{y}건<extra></extra>' }],
         { xaxis: { title: `log₁₀(${im.sym} / ${s.unit})` }, yaxis: { title: '항목 수' }, bargap: 0.05 });
       R(`중앙값은 <b>${fmt(med)}</b> ${im.sym}/${s.unit}입니다. 하위 10%는 ${fmt(p10)} 이하, 상위 10%는 ${fmt(p90)} 이상으로 양 끝이 <b>${times(p90 / p10)}</b> 벌어져 있습니다. 값이 이렇게 넓게 퍼져 있어 평균보다 중앙값으로 요약하는 편이 정확합니다.`);
     } else if (mode === 'box') {
@@ -93,7 +93,7 @@
       if (pr.length < 5) { L.purge('exChart'), $('exChart').innerHTML = `<div class="empty">두 영향 값이 모두 있는 항목이 ${pr.length}개뿐이라(최소 5개 필요) 그래프를 그리지 않았습니다.</div>`; return; }
       const rho = S.spearman(pr.map(r => r.v[j]), pr.map(r => r.v[j2]));
       T(`${im.name} × ${im2.name}`, `항목 ${pr.length}개 · 두 축 모두 로그 눈금`);
-      plot('exChart', [{ type: 'scatter', mode: 'markers', x: pr.map(r => r.v[j]), y: pr.map(r => r.v[j2]), text: pr.map(lbl), marker: { size: 8, color: '#2367d1', opacity: .75 }, hovertemplate: '%{text}<br>x %{x:.3g}<br>y %{y:.3g}<extra></extra>' }],
+      plot('exChart', [{ type: 'scatter', mode: 'markers', x: pr.map(r => r.v[j]), y: pr.map(r => r.v[j2]), text: pr.map(lbl), marker: { size: 8, color: L.C.teal, opacity: .75 }, hovertemplate: '%{text}<br>x %{x:.3g}<br>y %{y:.3g}<extra></extra>' }],
         { xaxis: { type: 'log', title: `${im.name} (${im.sym}/${s.unit})` }, yaxis: { type: 'log', title: `${im2.name} (${im2.sym}/${s.unit})` } });
       const w = rho >= .7 ? '순위가 거의 함께 움직입니다' : rho >= .4 ? '어느 정도 함께 움직이지만 예외도 많습니다' : rho > -.4 ? '거의 따로 움직입니다' : '한쪽이 클수록 다른 쪽은 작은 경향이 있습니다';
       R(`<b>ρ ${rho.toFixed(2)}</b>: ${w}(항목 ${pr.length}개). 상관이 있다고 해서 한쪽이 다른 쪽의 원인인 것은 아니며, 소재 종류가 섞여 있다면 구분별로 나눠서 보는 편이 안전합니다.`);
@@ -103,7 +103,7 @@
       const cell = (a, b) => { const p = all.filter(r => r.v[a] != null && r.v[b] != null); return { rho: a === b ? 1 : (p.length >= 8 ? S.spearman(p.map(r => r.v[a]), p.map(r => r.v[b])) : null), n: p.length }; };
       const M = ks.map(a => ks.map(b => cell(a, b)));
       T('영향끼리의 Spearman 상관계수(ρ)', '두 영향의 항목 순위가 얼마나 비슷한지(−1~1) · 비교 가능한 항목이 8개 미만인 칸은 비워 둠');
-      plot('exChart', [{ type: 'heatmap', x: ks.map(k => IMP[k].name), y: ks.map(k => IMP[k].name), z: M.map(r => r.map(c => c.rho)), text: M.map(r => r.map(c => (c.rho == null ? '' : c.rho.toFixed(2)))), texttemplate: '%{text}', customdata: M.map(r => r.map(c => c.n)), zmin: -1, zmax: 1, colorscale: [[0, '#c4504a'], [.5, '#fff'], [1, '#2367d1']], showscale: false, hovertemplate: '%{y} × %{x}<br>ρ %{z:.2f} · n=%{customdata}<extra></extra>' }],
+      plot('exChart', [{ type: 'heatmap', x: ks.map(k => IMP[k].name), y: ks.map(k => IMP[k].name), z: M.map(r => r.map(c => c.rho)), text: M.map(r => r.map(c => (c.rho == null ? '' : c.rho.toFixed(2)))), texttemplate: '%{text}', customdata: M.map(r => r.map(c => c.n)), zmin: -1, zmax: 1, colorscale: [[0, L.C.ochre], [.5, '#fff'], [1, L.C.teal]], showscale: false, hovertemplate: '%{y} × %{x}<br>ρ %{z:.2f} · n=%{customdata}<extra></extra>' }],
         { margin: { l: 120, b: 100 }, yaxis: { autorange: 'reversed' }, xaxis: { tickangle: -25 } });
       { let hi = null, lo = null; ks.forEach((a, x) => ks.forEach((b, y) => { if (y <= x || M[x][y].rho == null) return; const r = M[x][y].rho; if (!hi || r > hi.r) hi = { a, b, r }; if (!lo || r < lo.r) lo = { a, b, r }; })); R(hi ? `가장 비슷하게 움직이는 쌍은 <b>${IMP[hi.a].name} × ${IMP[hi.b].name}</b>(ρ ${hi.r.toFixed(2)}), 가장 따로 움직이는 쌍은 <b>${IMP[lo.a].name} × ${IMP[lo.b].name}</b>(ρ ${lo.r.toFixed(2)})입니다. 칸에 마우스를 올리면 비교한 항목 수가 나옵니다.` : '비교할 수 있는 쌍이 부족합니다.'); }
     } else {

@@ -1,19 +1,25 @@
-/* 공통: 데이터 준비, 표시 도구 */
+/* 공통: 데이터 준비, 색, 표시 도구 */
 (function (g) {
   const L = {};
   L.D = window.LCA_DATA; L.RES = window.LCA_RESULTS;
   // v 배열의 순서와 같다
   L.IMP = [
-    { k: '탄소', name: '탄소발자국', sym: 'kg CO₂ eq', plain: '기후변화(GWP)' },
-    { k: '자원', name: '자원발자국', sym: 'kg Sb eq', plain: '비생물 자원 고갈(ADP)' },
-    { k: '산성', name: '산성화', sym: 'kg SO₂ eq', plain: '산성화(AP)' },
-    { k: '부영', name: '부영양화', sym: 'kg PO₄³⁻ eq', plain: '부영양화(EP)' },
-    { k: '물', name: '물소모', sym: 'm³ H₂O eq', plain: '물 소비' },
-    { k: '스모그', name: '광화학스모그', sym: 'kg C₂H₄ eq', plain: '광화학 오존 생성(POCP)' },
-    { k: '오존', name: '오존층영향', sym: 'kg CFC-11 eq', plain: '성층권 오존 고갈(ODP)' }
+    { k: '탄소', name: '탄소발자국', sym: 'kg CO₂ eq', plain: '기후변화' },
+    { k: '자원', name: '자원발자국', sym: 'kg Sb eq', plain: '광물·화석 자원 고갈' },
+    { k: '산성', name: '산성화', sym: 'kg SO₂ eq', plain: '산성비' },
+    { k: '부영', name: '부영양화', sym: 'kg PO₄³⁻ eq', plain: '물속 영양 과잉' },
+    { k: '물', name: '물소모', sym: 'm³ H₂O eq', plain: '물 사용' },
+    { k: '스모그', name: '광화학스모그', sym: 'kg C₂H₄ eq', plain: '지표 오존 생성' },
+    { k: '오존', name: '오존층영향', sym: 'kg CFC-11 eq', plain: '성층권 오존 파괴' }
   ];
+  L.J = k => L.IMP.findIndex(i => i.k === k);
+  L.NAME = Object.fromEntries(L.IMP.map(i => [i.k, i.name]));
+  // Python 결과(json)의 영향 이름
+  L.RKEY = { 탄소: '탄소발자국', 자원: '자원발자국', 산성: '산성비', 부영: '부영양화', 스모그: '광화학스모그', 물: '물소모', 오존: '오존층영향' };
+  L.OTHERS = ['자원', '산성', '부영', '스모그', '물'];
   L.STAGES = ['원료 및 에너지 생산', '연료원별 사용', '화학반응공정', '폐기물 처리', '수송'];
-  L.COLORS = ['#1f6f8b', '#e08a3c', '#4f9a6b', '#8a5fb3', '#c4504a', '#6b7a90'];
+  L.C = { ink: '#15222D', slate: '#5D6A74', carbon: '#A9B2B8', teal: '#17708A', ochre: '#C27A0A', rule: '#DCE2E5', paper: '#F2F4F3', soft: '#E6ECEE' };
+  L.COLORS = ['#17708A', '#C27A0A', '#5D6A74', '#3E8F6E', '#8C5A9E', '#A9B2B8'];
   L.$ = id => document.getElementById(id);
   L.esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const SUP = { '-': '⁻', '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹' };
@@ -26,26 +32,53 @@
     if (a >= 0.01 && a < 100) return String(Number(v.toPrecision(3)));
     const [m, e] = v.toExponential(2).split('e'); return m + '×10' + String(+e).split('').map(c => SUP[c] || c).join('');
   };
-  L.pct = v => (v >= 10 || v === 0 ? Math.round(v) : v.toFixed(1)) + '%';
   L.lbl = r => (r.stage === '원료 및 에너지 생산' ? r.name : r.category + ' · ' + r.name);
   L.POOL = L.D.filter(r => r.stage === '원료 및 에너지 생산' && r.unit === 'kg' && r.category !== '수자원');
   L.col = (rows, j) => rows.filter(r => r.v[j] != null && r.v[j] > 0);
   L.coverage = (rows, j) => rows.length ? rows.filter(r => r.v[j] != null).length / rows.length : 0;
   L.has = (rows, j) => rows.filter(r => r.v[j] != null);
+  L.times = v => !isFinite(v) ? '-' : v >= 10000 ? `약 ${Math.round(v / 1000) / 10}만 배` : v >= 100 ? `약 ${Math.round(v).toLocaleString('ko-KR')}배` : v >= 10 ? `약 ${Math.round(v)}배` : `${v.toFixed(1)}배`;
+  L.josa = (w, a, b) => { const h = String(w).replace(/[^가-힣]+$/, '').slice(-1); const c = h ? h.charCodeAt(0) : 0; return w + (c && (c - 0xAC00) % 28 !== 0 ? a : b); };
+  L.topLabel = p => (p >= 50 ? `상위 ${Math.max(1, Math.round(100 - p))}%` : `하위 ${Math.max(1, Math.round(p))}%`);
+  L.reduce = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 
-  // 차트: Plotly 가 없으면(CDN 차단 등) 안내 문구를 보여 준다
+  // 원료 풀 안에서 영향별 백분위 (평균 순위 / 값이 있는 항목 수 × 100, Python 분석과 동일)
+  L.PCT = (() => {
+    const m = {};
+    for (const k of ['탄소', ...L.OTHERS]) {
+      const j = L.J(k), rows = L.POOL.filter(r => r.v[j] != null), rk = S.rank(rows.map(r => r.v[j]));
+      rows.forEach((r, i) => { (m[r.id] = m[r.id] || {})[k] = rk[i] / rows.length * 100; });
+    }
+    return m;
+  })();
+  L.pair = (a, b) => { const ja = L.J(a), jb = L.J(b), rows = L.POOL.filter(r => r.v[ja] != null && r.v[jb] != null); return { rho: S.spearman(rows.map(r => r.v[ja]), rows.map(r => r.v[jb])), n: rows.length, rows }; };
+  // 탄소 순위보다 다른 영향 순위가 th%p 이상 높은 원료
+  L.hidden = (th = 40) => {
+    const out = [];
+    for (const r of L.POOL) {
+      const p = L.PCT[r.id]; if (!p || p['탄소'] == null) continue;
+      let best = null;
+      for (const k of L.OTHERS) if (p[k] != null && (!best || p[k] - p['탄소'] > best.diff)) best = { k, diff: p[k] - p['탄소'] };
+      if (best && best.diff >= th) out.push({ r, k: best.k, c: p['탄소'], o: p[best.k], diff: best.diff });
+    }
+    return out.sort((a, b) => b.diff - a.diff);
+  };
+
+  // 차트: Plotly 가 없으면 안내 문구
   L.plot = (id, traces, layout, extra) => {
     const el = L.$(id); if (!el) return;
-    if (!window.Plotly) { el.innerHTML = '<p class="muted center pad">차트 라이브러리(Plotly) 로딩에 실패했습니다. 네트워크 연결을 확인한 뒤 새로고침해 주세요.</p>'; return; }
+    if (!window.Plotly) { el.innerHTML = '<p class="empty">차트를 불러오지 못했습니다. 네트워크 연결을 확인한 뒤 새로고침해 주세요.</p>'; return; }
     const base = {
-      font: { family: 'Pretendard, "Noto Sans KR", Inter, sans-serif', size: 13, color: '#243247' },
-      paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', margin: { l: 70, r: 20, t: 20, b: 60 }, hoverlabel: { font: { size: 13 } }
+      font: { family: '"Pretendard Variable", Pretendard, "Noto Sans KR", sans-serif', size: 13, color: L.C.ink },
+      paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', margin: { l: 70, r: 20, t: 16, b: 56 },
+      hoverlabel: { font: { size: 13, family: '"Pretendard Variable", Pretendard, sans-serif' }, bgcolor: '#fff', bordercolor: L.C.rule },
+      xaxis: { gridcolor: '#E3E8EA', zerolinecolor: '#D3DADD', linecolor: L.C.rule }, yaxis: { gridcolor: '#E3E8EA', zerolinecolor: '#D3DADD', linecolor: L.C.rule }
     };
     const lay = Object.assign({}, base, layout || {});
+    for (const ax of ['xaxis', 'yaxis']) lay[ax] = Object.assign({}, base[ax], (layout || {})[ax] || {});
     lay.margin = Object.assign({}, base.margin, (layout || {}).margin || {});
     Plotly.newPlot(el, traces, lay, Object.assign({ displayModeBar: false, responsive: true }, extra || {}));
   };
-  // 차트 영역에 안내 문구를 넣기 전에 기존 차트를 정리한다(문구와 차트가 겹치지 않도록)
   L.purge = id => { const el = L.$(id); if (!el) return; try { if (window.Plotly) Plotly.purge(el); } catch (e) { } el.classList.remove('js-plotly-plot'); el.innerHTML = ''; };
   L.resizeAll = root => { if (!window.Plotly) return; (root || document).querySelectorAll('.js-plotly-plot').forEach(el => { try { Plotly.Plots.resize(el); } catch (e) { } }); };
   L.opts = (sel, list, valueFn, textFn, keep) => {
@@ -53,22 +86,21 @@
     sel.innerHTML = list.map(x => `<option value="${L.esc(valueFn(x))}">${L.esc(textFn(x))}</option>`).join('');
     if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
   };
-  // 군집 이름: 숫자(전체 중앙값 대비 배수)에서 바로 만든다. ratios=[영향별 배수], names=[영향 이름]
-  L.fx = v => (v >= 10 ? Math.round(v) : v.toFixed(v < 1 ? 2 : 1)) + '배';
-  L.times = v => !isFinite(v) ? '-' : v >= 10000 ? `약 ${Math.round(v / 1000) / 10}만 배` : v >= 100 ? `약 ${Math.round(v).toLocaleString('ko-KR')}배` : v >= 10 ? `약 ${Math.round(v)}배` : `${v.toFixed(1)}배`;
-  // 조사 선택: 받침 여부에 따라 이/가, 은/는, 과/와
-  L.josa = (w, a, b) => { const h = String(w).replace(/[^가-힣]+$/, '').slice(-1); const c = h ? h.charCodeAt(0) : 0; return w + (c && (c - 0xAC00) % 28 !== 0 ? a : b); };
-  L.clusterTitle = (ratios, names) => {
-    const o = ratios.map((v, i) => ({ n: names[i], v })).sort((a, b) => b.v - a.v);
-    const two = o.slice(0, 2).map(x => `${x.n} ${L.fx(x.v)}`).join(', ');
-    if (o[0].v < 1) return { title: '전반적으로 낮은 군집', line: '모든 영향이 전체 중앙값보다 낮습니다.' };
-    const big = o.filter(x => x.v >= 5).slice(0, 2);
-    if (big.length) return { title: `${L.josa(big.map(x => x.n).join('·'), '이', '가')} 유난히 큰 군집`, line: `전체 중앙값보다 <b>${two}</b> 높습니다.` };
-    if (o[0].v >= 2) return { title: `${L.josa(o[0].n, '이', '가')} 높은 군집`, line: `전체 중앙값보다 <b>${two}</b> 높습니다.` };
-    return { title: '중간 수준 군집', line: `대부분의 영향이 전체 중앙값과 비슷합니다(가장 큰 차이: ${o[0].n} ${L.fx(o[0].v)}).` };
+  // 화면에 들어올 때 한 번 실행 (차트 그리기, 막대 채우기)
+  L.onView = (el, fn) => {
+    if (!el) return;
+    if (!('IntersectionObserver' in window)) return fn();
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { io.disconnect(); fn(); } }), { threshold: 0.15 });
+    io.observe(el);
   };
-  L.coverageOK = s => L.IMP.filter((_, j) => L.coverage(s.rows, j) >= .5).length;
-  L.topLabel = p => (p >= 50 ? `상위 ${Math.max(1, Math.round(100 - p))}%` : `하위 ${Math.max(1, Math.round(p))}%`);
-  L.tabs = {}; // 탭 이름 -> 처음 열 때 실행할 함수
+  // 숫자 세기 애니메이션 (동작 줄이기 설정이면 바로 표시)
+  L.count = (el, to, dec = 0, dur = 900) => {
+    if (!el) return; const f = v => v.toFixed(dec);
+    if (L.reduce) { el.textContent = f(to); return; }
+    const t0 = performance.now(), from = +(el.dataset.v || 0);
+    const step = t => { const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3); el.textContent = f(from + (to - from) * e); if (p < 1) requestAnimationFrame(step); else el.dataset.v = to; };
+    requestAnimationFrame(step);
+  };
+  L.tabs = {};
   g.L = L;
 })(window);

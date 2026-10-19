@@ -1,5 +1,7 @@
-"""Looply 재분석: 원자료(7개 영향 전부)에서 시작. 항목을 통째로 버리지 않고, 영향별로 쓸 수 있는 값만 쓴다.
-실행: python3 analysis/reanalysis.py  -> data/analysis_results.json, data/clusters_k*.csv
+"""Beyond Carbon 분석: 환경성적표지(EPD) 평가계수 398건(한국환경산업기술원, 2021-08-02 기준)
+질문: 탄소발자국만 보면 다른 환경영향을 놓치지 않을까?
+원자료(7개 영향 전부)에서 시작하고, 결측은 0으로 채우지 않으며 영향별로 쓸 수 있는 값만 쓴다.
+실행: python3 analysis/reanalysis.py  -> data/analysis_results.json, js/results.js, data/clusters_k*.csv(부록)
 """
 import json, numpy as np, pandas as pd
 from scipy.stats import spearmanr
@@ -52,7 +54,7 @@ R["bias_core3"] = {i: int(r["핵심3"]) for i, r in t3.iterrows()}
 old = base.dropna(subset=[KEY[k] for k in ["탄소","자원","산성","부영","물"]])
 R["old_rule_n"] = int(len(old))
 
-# 5) k-means (로그 → 표준화), k=2..6
+# 5) [부록] k-means 군집: 탐색적으로 시도했으나 경계가 뚜렷하지 않음 (웹에서는 요약만 표시) (로그 → 표준화), k=2..6
 X = StandardScaler().fit_transform(np.log10(d[fc].values))
 pca = np.round(__import__("sklearn.decomposition", fromlist=["PCA"]).PCA().fit(X).explained_variance_ratio_, 3).tolist()
 R["pca_ratio"] = pca
@@ -157,7 +159,70 @@ R["stage_notes"] = {
  "폐기물 처리": f"항목 {int((df['대분류']=='폐기물 처리').sum())}개, 영향 값은 약 60~75%만 채워짐",
  "수송": "ton.km 기준 10개, 영향별로 50~100% 채워짐"}
 
+
+# ---------------------------------------------------------------
+# 12) 핵심 질문 보강: 상관계수의 불확실성 (부트스트랩 95% 구간, 2,000회)
+rng = np.random.default_rng(42)
+OTHERS = ["자원","산성","부영","스모그","물"]
+boot = {}
+for k in OTHERS:
+    s = base[[KEY["탄소"], KEY[k]]].dropna().values
+    rho0 = float(spearmanr(s[:,0], s[:,1])[0]); bs = []
+    for _ in range(2000):
+        i = rng.integers(0, len(s), len(s)); bs.append(spearmanr(s[i,0], s[i,1])[0])
+    lo, hi = np.percentile(bs, [2.5, 97.5])
+    boot[SHORT[k]] = {"rho": round(rho0,2), "lo": round(float(lo),2), "hi": round(float(hi),2), "n": int(len(s))}
+R["carbon_rho_ci"] = boot
+
+# 13) 실무 질문: 탄소 상위 20%만 관리하면, 다른 영향의 상위 20%를 몇 % 잡아내나 (선별 포착률)
+cap = {}
+for k in OTHERS:
+    s = base[[KEY["탄소"], KEY[k]]].dropna()
+    tc = s[KEY["탄소"]] >= s[KEY["탄소"]].quantile(0.8); to = s[KEY[k]] >= s[KEY[k]].quantile(0.8)
+    cap[SHORT[k]] = {"포착률": round(float((tc & to).sum()/to.sum()*100),0), "다른영향상위": int(to.sum()), "함께상위": int((tc & to).sum()), "n": int(len(s))}
+R["screening_capture"] = cap
+R["screening_rule"] = "각 영향에서 상위 20%(값이 큰 쪽)인 원료 중, 탄소발자국도 상위 20%인 원료의 비율. 무작위로 고르면 약 20%"
+
+# 14) 기준 민감도: '놓치는 원료' 기준(순위 차이)을 바꾸면 몇 종인가
+diffmax = []
+for idx, r in pct.iterrows():
+    ds = [r[k]-r["탄소"] for k in ["자원","산성","부영","스모그","물"] if pd.notna(r[k])]
+    diffmax.append(max(ds) if ds else np.nan)
+diffmax = pd.Series(diffmax, index=pct.index)
+R["hidden_threshold"] = {str(t): int((diffmax >= t).sum()) for t in [30, 40, 50, 60]}
+R["hidden_by_impact"] = pd.Series([h["더큰영향"] for h in hid]).value_counts().to_dict()
+R["hidden_by_category"] = pd.Series([h["구분"] for h in hid]).value_counts().to_dict()
+
+# 15) 소재군 효과 확인: 같은 구분 안에서도 탄소–물 관계가 약한가 (항목 10개 이상 구분)
+wcw = {}
+for c, g in base.groupby("구분"):
+    s = g[[KEY["탄소"], KEY["물"]]].dropna()
+    if len(s) >= 10: wcw[c] = {"rho": round(float(spearmanr(s.iloc[:,0], s.iloc[:,1])[0]),2), "n": int(len(s))}
+R["within_category_carbon_water"] = wcw
+
+# 16) 단계별 격차: 수송(ton·km)과 폐기(kg)
+tr = df[df["대분류"]=="수송"]
+R["transport"] = [{"구분": r["구분"], "이름": r["원료_에너지"], **{SHORT[k]: (None if pd.isna(r[KEY[k]]) else float(r[KEY[k]])) for k in KEY}} for _, r in tr.iterrows()]
+tc = tr.set_index("원료_에너지")[KEY["탄소"]]
+R["transport_ratio_air_vs_ship"] = round(float(tc["항공"]/tc.min()), 0)
+R["transport_min_name"] = str(tc.idxmin())
+ws = df[(df["대분류"]=="폐기물 처리") & (df["구분"].isin(["매립","소각","재활용"]))]
+R["waste"] = [{"구분": r["구분"], "이름": r["원료_에너지"], **{SHORT[k]: (None if pd.isna(r[KEY[k]]) else float(r[KEY[k]])) for k in KEY}} for _, r in ws.iterrows()]
+wm = ws.groupby("구분")[KEY["탄소"]].median()
+R["waste_median_carbon"] = {k: float(v) for k, v in wm.items()}
+R["waste_ratio_incin_vs_recycle"] = round(float(wm["소각"]/wm["재활용"]), 0)
+# 같은 폐기물을 소각 vs 재활용 (이름이 짝지어지는 것만)
+pairs = []
+for nm in ["폐목","폐유리","폐지","혼합폐플라스틱","폐금속"]:
+    a = ws[(ws["구분"]=="소각") & ws["원료_에너지"].str.startswith(nm)]
+    b = ws[(ws["구분"]=="재활용") & ws["원료_에너지"].str.contains(nm.replace("폐금속","폐철금속"))]
+    if len(a) and len(b):
+        pairs.append({"폐기물": nm, "소각": float(a[KEY["탄소"]].iloc[0]), "재활용": float(b[KEY["탄소"]].iloc[0]), "배율": round(float(a[KEY["탄소"]].iloc[0]/b[KEY["탄소"]].iloc[0]),0)})
+R["waste_pairs"] = pairs
+R["recycling_any_negative"] = bool((ws[ws["구분"]=="재활용"][list(KEY.values())] < 0).any().any())
+
 out = d[["대분류","구분","원료_에너지","단위"]+fc+["군집"]]
 out.to_csv(f"data/clusters_k{K}.csv", encoding="utf-8-sig", index=True, index_label="행번호")
-json.dump(R, open("data/analysis_results.json","w"), ensure_ascii=False, indent=1)
+json.dump(R, open("data/analysis_results.json","w",encoding="utf-8"), ensure_ascii=False, indent=1)
+open("js/results.js","w",encoding="utf-8").write("window.LCA_RESULTS="+json.dumps(R, ensure_ascii=False, separators=(",",":"))+";\n")
 print(json.dumps({k:R[k] for k in ["base_n","pool_n","features","cluster_n","old_rule_n","coverage_pool","pca_ratio","k_scores","chosen_k","sensitivity","category_purity","carbon_range","hidden_burden_n"]}, ensure_ascii=False, indent=1))
