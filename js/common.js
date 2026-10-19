@@ -8,7 +8,7 @@
     { k: '자원', name: '자원발자국', sym: 'kg Sb eq', plain: '광물·화석 자원 고갈' },
     { k: '산성', name: '산성비', sym: 'kg SO₂ eq', plain: '산성화' },
     { k: '부영', name: '부영양화', sym: 'kg PO₄³⁻ eq', plain: '물속 영양 과잉' },
-    { k: '물', name: '물소모계수', sym: 'm³ H₂O eq', plain: '물 사용' },
+    { k: '물', name: '물발자국', sym: 'm³ H₂O eq', plain: '물 사용' },
     { k: '스모그', name: '광화학스모그', sym: 'kg C₂H₄ eq', plain: '지표 오존 생성' },
     { k: '오존', name: '오존층영향', sym: 'kg CFC-11 eq', plain: '성층권 오존 파괴' }
   ];
