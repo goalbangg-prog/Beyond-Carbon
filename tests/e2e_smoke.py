@@ -10,16 +10,15 @@ async def main():
         pg.on("pageerror", lambda e: errs.append(str(e)))
         await pg.route("**/plotly*.js", lambda r: r.fulfill(body=STUB, content_type="application/javascript"))
         await pg.goto("file://" + BASE + "/index.html"); await pg.wait_for_timeout(1500)
-        assert await pg.evaluate("document.querySelectorAll('#waffle i.miss').length") == 19, "첫 화면: 빠지는 원료 19칸"
+        assert await pg.evaluate("document.querySelectorAll('.hero-cmp tr.same').length") == 5, "첫 화면: 납·염소 같은 값 5개"
+        assert await pg.evaluate("document.querySelectorAll('.flag').length") == 6, "다시 확인할 값 6건"
+        assert await pg.evaluate("document.querySelectorAll('.exbars').length") == 2, "계산 예시 2개"
         # 스크롤 단계 5(겹치는 곳): 연두 점 19개, 초록 점 14개
         await pg.evaluate("(()=>{const e=document.querySelector('.step[data-step=\"4\"]');const r=e.getBoundingClientRect();window.scrollBy(0,r.top+r.height/2-innerHeight/2)})()"); await pg.wait_for_timeout(800)
         n = await pg.evaluate("[document.querySelectorAll('#sdots circle.miss').length, document.querySelectorAll('#sdots circle.got').length]")
         assert n == [19, 14], n
-        await pg.evaluate("document.getElementById('c4').scrollIntoView()"); await pg.wait_for_timeout(400)
-        await pg.fill("#thSlider", "50"); await pg.dispatch_event("#thSlider", "input"); await pg.wait_for_timeout(600)
-        assert await pg.inner_text("#thN") == "21"
         for t in ["notes", "report"]:
             await pg.click(f'[data-tab="{t}"]'); await pg.wait_for_timeout(500)
         assert not errs, errs
-        print("ok: 첫 화면 와플, 스크롤 단계, 기준 슬라이더, 탭 전환, 오류 없음"); await b.close()
+        print("ok: 첫 화면 비교표, 다시 확인할 값 6건, 계산 예시, 스크롤 단계, 탭 전환, 오류 없음"); await b.close()
 asyncio.run(main())
