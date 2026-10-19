@@ -9,4 +9,7 @@ eq(S.spearman([1, 2, 2, 3], [1, 2, 2, 3]), 1, 'spearman ties');
 const R = window.LCA_RESULTS;
 eq(L.POOL.length, R.pool_n, '원료 풀 크기 = Python');
 for (const k of L.OTHERS) { const p = L.pair('탄소', k), py = R.carbon_rho_ci[L.RKEY[k]]; eq(+p.rho.toFixed(2), py.rho, `탄소–${k} ρ = Python`, 1e-9); eq(p.n, py.n, `탄소–${k} n = Python`); }
-for (const t of ['30', '40', '50', '60']) eq(L.hidden(+t).length, R.hidden_threshold[t], `놓치는 원료(${t}%p) = Python`);
+for (const t of ['20', '30', '40', '50', '60']) eq(L.hidden(+t).length, R.hidden_threshold[t], `놓치는 원료(${t}%p) = Python`);
+for (const k of L.OTHERS) { const t = L.top20(k), c = R.screening_capture[L.RKEY[k]]; eq(t.both.length, c['함께상위'], `선별 포착(${k}) 함께 잡힘 = Python`); eq(t.to.size, c['다른영향상위'], `선별 포착(${k}) 상위 수 = Python`); }
+// 순위는 두 값이 모두 있는 원료끼리 매긴다: 영향 쌍마다 백분위 최댓값이 100
+for (const k of L.OTHERS) { const v = Object.values(L.PP[k]); eq(Math.max(...v.map(p => p.c)), 100, `${k} 쌍의 탄소 백분위 최댓값 100`); eq(v.length, R.carbon_rho_ci[L.RKEY[k]].n, `${k} 쌍 원료 수 = Python`); }

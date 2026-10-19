@@ -5,12 +5,13 @@
     ['빈 값(결측) 처리', '“해당없음”은 0이 아니라 빈 값으로 두었습니다. 영향 두 개를 비교할 때는 두 값이 모두 있는 원료만 썼습니다.'],
     ['로그 눈금', '값을 10배씩 커지는 눈금으로 그렸습니다. 계수가 수십만 배까지 차이 나서, 보통 눈금에서는 큰 값 몇 개만 보입니다.'],
     ['중앙값과 분위수', '크기순으로 세웠을 때 가운데 값(중앙값), 하위 10%·상위 10% 경계(P10·P90)입니다. 값이 한쪽으로 크게 치우쳐 평균 대신 썼습니다.'],
-    ['백분위', '원료 풀 안에서 몇 번째쯤인지를 0~100으로 나타낸 값입니다. 값이 클수록 영향이 큰 쪽입니다. 크기가 아니라 순위 정보입니다.'],
+    ['백분위', '몇 번째쯤인지를 0~100으로 나타낸 값입니다. 값이 클수록 영향이 큰 쪽입니다. 두 영향을 비교할 때는 두 값이 모두 있는 원료끼리 다시 순위를 매겼습니다. 탄소는 187종, 물소모는 163종처럼 값이 있는 원료 수가 달라서, 서로 다른 집단의 순위를 빼면 비교가 어긋나기 때문입니다.'],
     ['Spearman 순위상관(ρ)', '두 영향에서 원료들의 순위가 얼마나 비슷한지를 −1~1로 나타냅니다. 1이면 순위가 완전히 같고 0이면 거의 관계가 없습니다. 값 대신 순위를 쓰기 때문에 극단값에 덜 흔들립니다. 상관이 곧 원인은 아닙니다.'],
-    ['부트스트랩 95% 구간', '원료 목록에서 같은 수만큼 무작위로 다시 뽑아(중복 허용) 상관계수를 2,000번 계산하고, 가운데 95%가 놓이는 범위를 구했습니다. 이 범위가 좁을수록 결과를 믿을 만합니다.'],
+    ['부트스트랩 95% 구간', '원료 목록에서 같은 수만큼 무작위로 다시 뽑아(중복 허용) 2,000번 계산하고, 가운데 95%가 놓이는 범위를 구했습니다. 상관계수와 선별 포착률 모두에 붙였습니다. 범위가 넓을수록 숫자 하나를 단정해서 말하면 안 됩니다.'],
     ['선별 포착률', '어떤 영향의 상위 20% 원료 중, 탄소발자국도 상위 20%에 드는 원료의 비율입니다. 탄소로만 골라 관리할 때 그 영향의 핵심 원료를 얼마나 함께 잡는지 보여 줍니다. 무작위로 골라도 약 20%입니다.'],
     ['놓치는 원료', '다른 영향의 백분위가 탄소발자국 백분위보다 일정 기준(기본 40%p) 이상 높은 원료입니다. 기준을 바꾼 결과도 함께 공개했습니다.'],
-    ['K-means 군집 (부록)', '값의 패턴이 비슷한 원료끼리 자동으로 묶는 방법입니다. 실루엣 점수(0.5 이상이면 경계가 뚜렷한 편)와 ARI(두 결과가 얼마나 같은지, 1이면 동일)로 결과를 점검했고, 경계가 흐려 부록으로 내렸습니다.']
+    ['판정 기준', '선별 포착률의 95% 구간이 모두 50% 이상이면 ‘탄소로 대신 볼 수 있음’, 구간 위쪽 끝이 60% 미만이면 ‘따로 확인해야 함’, 그 사이는 ‘일부만 잡힘’으로 나눴습니다.'],
+    ['K-means 군집 (부록)', '값의 패턴이 비슷한 원료끼리 자동으로 묶는 방법입니다. 실루엣 점수(0.5 이상이면 경계가 뚜렷한 편)와 ARI(두 결과가 얼마나 같은지, 1이면 동일)로 점검했고, 경계가 흐려 결론에 쓰지 않았습니다.']
   ];
   function build() {
     const nStage = D.filter(r => r.stage === '원료 및 에너지 생산').length;
@@ -36,12 +37,13 @@
         <dl class="glossary">${METHODS.map(([t, d]) => `<div><dt>${esc(t)}</dt><dd>${esc(d)}</dd></div>`).join('')}</dl></section>
 
       <section class="nb"><h2>재현</h2>
-        <p>모든 수치는 Python(pandas, NumPy, SciPy, scikit-learn)으로 원자료에서 다시 계산할 수 있습니다. 웹 화면의 순위상관과 놓치는 원료 수는 Python 결과와 같은지 검산했습니다.</p>
+        <p>모든 수치는 Python(pandas, NumPy, SciPy, scikit-learn)으로 원자료에서 다시 계산할 수 있습니다. 웹 화면의 순위상관, 선별 포착률, 놓치는 원료 수는 Python 결과와 같은지 자동 테스트로 검산했습니다.</p>
         <pre><code>pip install -r requirements.txt
 python analysis/reanalysis.py   # data/analysis_results.json, js/results.js 생성</code></pre>
         <ul class="plain">
           <li><a href="https://github.com/goalbangg-prog/Beyond-Carbon/blob/main/analysis/reanalysis.py" target="_blank" rel="noopener">analysis/reanalysis.py</a> · 원자료부터 모든 결과를 만드는 코드</li>
           <li><a href="https://github.com/goalbangg-prog/Beyond-Carbon/blob/main/notebooks/data_preprocessing.ipynb" target="_blank" rel="noopener">notebooks/data_preprocessing.ipynb</a> · 원자료 정제 과정</li>
+          <li><a href="https://github.com/goalbangg-prog/Beyond-Carbon/blob/main/tests/stats.test.js" target="_blank" rel="noopener">tests/stats.test.js</a> · 웹 계산과 Python 결과 비교 테스트</li>
           <li><a href="https://github.com/goalbangg-prog/Beyond-Carbon/blob/main/data/lca_factors_clean.csv" target="_blank" rel="noopener">data/lca_factors_clean.csv</a> · 정제한 데이터</li>
         </ul></section>
 

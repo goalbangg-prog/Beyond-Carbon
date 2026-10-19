@@ -130,25 +130,28 @@ for c, g in base.groupby("구분"):
     if len(s) >= 10: within[c] = {"rho": round(float(spearmanr(s.iloc[:,0], s.iloc[:,1])[0]),2), "n": int(len(s))}
 R["within_category_carbon_resource"] = within
 
-# 10) 탄소만 보면 놓치는 것: 순위(백분위) 차이
-pct = pd.DataFrame(index=base.index)
-for k in ["탄소","자원","산성","부영","스모그","물"]:
-    pct[k] = base[KEY[k]].rank(pct=True)*100
-hid = []
-for idx, r in pct.iterrows():
-    best = None
-    for k in ["자원","산성","부영","스모그","물"]:
-        if pd.notna(r[k]):
-            diff = r[k]-r["탄소"]
-            if best is None or diff > best[1]: best = (k, diff)
-    if best and best[1] >= 40:
-        hid.append({"이름": base.loc[idx,"원료_에너지"], "구분": base.loc[idx,"구분"], "탄소순위(%)": round(float(r["탄소"]),0),
-                    "더큰영향": SHORT[best[0]], "그영향순위(%)": round(float(pct.loc[idx,best[0]]),0), "차이": round(float(best[1]),0)})
-hid.sort(key=lambda x: -x["차이"])
+# 10) 탄소만 보면 놓치는 것: 같은 집단 안에서 매긴 순위(백분위) 비교
+# 두 영향 값이 모두 있는 원료끼리만 순위를 매긴다. (서로 다른 집단에서 매긴 순위를 빼면 비교가 어긋난다)
+PAIRK = ["자원","산성","부영","스모그","물"]
+def paired_pct(k):
+    s = base[[KEY["탄소"], KEY[k]]].dropna()
+    return pd.DataFrame({"탄소": s[KEY["탄소"]].rank(pct=True)*100, "다른": s[KEY[k]].rank(pct=True)*100})
+PP = {k: paired_pct(k) for k in PAIRK}
+def hidden_list(th):
+    out = {}
+    for k, t in PP.items():
+        dd = t["다른"] - t["탄소"]
+        for i, v in dd.items():
+            if v >= th and (i not in out or v > out[i][1]): out[i] = (k, v)
+    return out
+hb = hidden_list(40)
+hid = sorted([{"이름": base.loc[i,"원료_에너지"], "구분": base.loc[i,"구분"], "탄소순위(%)": round(float(PP[k].loc[i,"탄소"]),0),
+               "더큰영향": SHORT[k], "그영향순위(%)": round(float(PP[k].loc[i,"다른"]),0), "차이": round(float(v),0)} for i, (k, v) in hb.items()], key=lambda x: -x["차이"])
 R["hidden_burden"] = hid[:15]; R["hidden_burden_n"] = len(hid)
-# 반대: 탄소는 높은데 다른 영향은 낮은 항목
+R["hidden_rank_rule"] = "영향 쌍마다 두 값이 모두 있는 원료끼리 순위를 매겨 비교"
+# 영향별로 따로 센 수 (첫 화면 렌즈용)
+R["hidden_per_impact"] = {SHORT[k]: int(((t["다른"]-t["탄소"]) >= 40).sum()) for k, t in PP.items()}
 R["carbon_top10"] = base.nlargest(10, KEY["탄소"])[["구분","원료_에너지",KEY["탄소"]]].rename(columns={KEY["탄소"]:"탄소"}).to_dict("records")
-# 값의 폭
 c = base[KEY["탄소"]]
 R["carbon_range"] = {"min": float(c.min()), "median": float(c.median()), "max": float(c.max()), "배율": round(float(c.max()/c.min()),0), "p10": float(c.quantile(.1)), "p90": float(c.quantile(.9))}
 
@@ -174,22 +177,23 @@ for k in OTHERS:
     boot[SHORT[k]] = {"rho": round(rho0,2), "lo": round(float(lo),2), "hi": round(float(hi),2), "n": int(len(s))}
 R["carbon_rho_ci"] = boot
 
-# 13) 실무 질문: 탄소 상위 20%만 관리하면, 다른 영향의 상위 20%를 몇 % 잡아내나 (선별 포착률)
+# 13) 실무 질문: 탄소 상위 20%만 관리하면, 다른 영향의 상위 20%를 몇 % 잡아내나 (선별 포착률 + 부트스트랩 95% 구간)
+def capture_rate(x):
+    tc = x[:,0] >= np.quantile(x[:,0], 0.8); to = x[:,1] >= np.quantile(x[:,1], 0.8)
+    return (tc & to).sum(), to.sum()
 cap = {}
 for k in OTHERS:
-    s = base[[KEY["탄소"], KEY[k]]].dropna()
-    tc = s[KEY["탄소"]] >= s[KEY["탄소"]].quantile(0.8); to = s[KEY[k]] >= s[KEY[k]].quantile(0.8)
-    cap[SHORT[k]] = {"포착률": round(float((tc & to).sum()/to.sum()*100),0), "다른영향상위": int(to.sum()), "함께상위": int((tc & to).sum()), "n": int(len(s))}
+    s = base[[KEY["탄소"], KEY[k]]].dropna().values
+    both, top = capture_rate(s); bs = []
+    for _ in range(2000):
+        bb, tt = capture_rate(s[rng.integers(0, len(s), len(s))]); bs.append(bb/tt*100)
+    lo, hi = np.percentile(bs, [2.5, 97.5])
+    cap[SHORT[k]] = {"포착률": round(float(both/top*100),0), "lo": round(float(lo),0), "hi": round(float(hi),0), "다른영향상위": int(top), "함께상위": int(both), "빠진": int(top-both), "n": int(len(s))}
 R["screening_capture"] = cap
 R["screening_rule"] = "각 영향에서 상위 20%(값이 큰 쪽)인 원료 중, 탄소발자국도 상위 20%인 원료의 비율. 무작위로 고르면 약 20%"
 
 # 14) 기준 민감도: '놓치는 원료' 기준(순위 차이)을 바꾸면 몇 종인가
-diffmax = []
-for idx, r in pct.iterrows():
-    ds = [r[k]-r["탄소"] for k in ["자원","산성","부영","스모그","물"] if pd.notna(r[k])]
-    diffmax.append(max(ds) if ds else np.nan)
-diffmax = pd.Series(diffmax, index=pct.index)
-R["hidden_threshold"] = {str(t): int((diffmax >= t).sum()) for t in [30, 40, 50, 60]}
+R["hidden_threshold"] = {str(t): len(hidden_list(t)) for t in [20, 30, 40, 50, 60]}
 R["hidden_by_impact"] = pd.Series([h["더큰영향"] for h in hid]).value_counts().to_dict()
 R["hidden_by_category"] = pd.Series([h["구분"] for h in hid]).value_counts().to_dict()
 
@@ -199,6 +203,8 @@ for c, g in base.groupby("구분"):
     s = g[[KEY["탄소"], KEY["물"]]].dropna()
     if len(s) >= 10: wcw[c] = {"rho": round(float(spearmanr(s.iloc[:,0], s.iloc[:,1])[0]),2), "n": int(len(s))}
 R["within_category_carbon_water"] = wcw
+s = base[base["구분"]!="기초화학물질"][[KEY["탄소"], KEY["물"]]].dropna()
+R["carbon_water_without_basic_chem"] = {"rho": round(float(spearmanr(s.iloc[:,0], s.iloc[:,1])[0]),2), "n": int(len(s))}
 
 # 16) 단계별 격차: 수송(ton·km)과 폐기(kg)
 tr = df[df["대분류"]=="수송"]

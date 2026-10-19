@@ -18,8 +18,10 @@
   L.RKEY = { 탄소: '탄소발자국', 자원: '자원발자국', 산성: '산성비', 부영: '부영양화', 스모그: '광화학스모그', 물: '물소모', 오존: '오존층영향' };
   L.OTHERS = ['자원', '산성', '부영', '스모그', '물'];
   L.STAGES = ['원료 및 에너지 생산', '연료원별 사용', '화학반응공정', '폐기물 처리', '수송'];
-  L.C = { ink: '#15222D', slate: '#5D6A74', carbon: '#A9B2B8', teal: '#17708A', ochre: '#C27A0A', rule: '#DCE2E5', paper: '#F2F4F3', soft: '#E6ECEE' };
-  L.COLORS = ['#17708A', '#C27A0A', '#5D6A74', '#3E8F6E', '#8C5A9E', '#A9B2B8'];
+  // 진녹색(forest) · 초록(green) · 연두(lime)
+  L.C = { ink: '#13281D', forest: '#0F3B2A', green: '#2F8A4F', leaf: '#7DB547', lime: '#C6E05A', sage: '#AFC4B4', slate: '#56695D', rule: '#D7E2D8', paper: '#F4F7F1', mint: '#E4F0E3' };
+  L.C.teal = L.C.green; L.C.ochre = L.C.forest; // 데이터 탐색 탭 호환
+  L.COLORS = ['#2F8A4F', '#0F3B2A', '#7DB547', '#56695D', '#A3C93A', '#AFC4B4'];
   L.$ = id => document.getElementById(id);
   L.esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const SUP = { '-': '⁻', '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹' };
@@ -42,26 +44,33 @@
   L.topLabel = p => (p >= 50 ? `상위 ${Math.max(1, Math.round(100 - p))}%` : `하위 ${Math.max(1, Math.round(p))}%`);
   L.reduce = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 
-  // 원료 풀 안에서 영향별 백분위 (평균 순위 / 값이 있는 항목 수 × 100, Python 분석과 동일)
-  L.PCT = (() => {
-    const m = {};
-    for (const k of ['탄소', ...L.OTHERS]) {
-      const j = L.J(k), rows = L.POOL.filter(r => r.v[j] != null), rk = S.rank(rows.map(r => r.v[j]));
-      rows.forEach((r, i) => { (m[r.id] = m[r.id] || {})[k] = rk[i] / rows.length * 100; });
+  // 영향 쌍마다 '두 값이 모두 있는 원료'끼리 순위(백분위)를 매긴다 (Python 분석과 동일)
+  // PP[k][id] = { c: 탄소 백분위, o: 영향 k 백분위 }
+  L.PP = (() => {
+    const out = {}, jc = L.J('탄소');
+    for (const k of L.OTHERS) {
+      const j = L.J(k), rows = L.POOL.filter(r => r.v[jc] != null && r.v[j] != null);
+      const rc = S.rank(rows.map(r => r.v[jc])), ro = S.rank(rows.map(r => r.v[j])), n = rows.length;
+      out[k] = {}; rows.forEach((r, i) => (out[k][r.id] = { c: rc[i] / n * 100, o: ro[i] / n * 100 }));
     }
-    return m;
+    return out;
   })();
   L.pair = (a, b) => { const ja = L.J(a), jb = L.J(b), rows = L.POOL.filter(r => r.v[ja] != null && r.v[jb] != null); return { rho: S.spearman(rows.map(r => r.v[ja]), rows.map(r => r.v[jb])), n: rows.length, rows }; };
-  // 탄소 순위보다 다른 영향 순위가 th%p 이상 높은 원료
+  // 탄소 순위보다 다른 영향 순위가 th%p 이상 높은 원료 (원료마다 차이가 가장 큰 영향 하나로 센다)
   L.hidden = (th = 40) => {
-    const out = [];
-    for (const r of L.POOL) {
-      const p = L.PCT[r.id]; if (!p || p['탄소'] == null) continue;
-      let best = null;
-      for (const k of L.OTHERS) if (p[k] != null && (!best || p[k] - p['탄소'] > best.diff)) best = { k, diff: p[k] - p['탄소'] };
-      if (best && best.diff >= th) out.push({ r, k: best.k, c: p['탄소'], o: p[best.k], diff: best.diff });
+    const best = {};
+    for (const k of L.OTHERS) for (const [id, p] of Object.entries(L.PP[k])) {
+      const d = p.o - p.c; if (d >= th && (!best[id] || d > best[id].diff)) best[id] = { k, c: p.c, o: p.o, diff: d };
     }
-    return out.sort((a, b) => b.diff - a.diff);
+    const byId = Object.fromEntries(L.POOL.map(r => [r.id, r]));
+    return Object.entries(best).map(([id, b]) => ({ r: byId[id], ...b })).sort((a, b) => b.diff - a.diff);
+  };
+  // 상위 20% 선별: 값이 80% 분위수 이상 (numpy.quantile 과 같은 선형 보간)
+  L.top20 = k => {
+    const jc = L.J('탄소'), j = L.J(k), rows = L.POOL.filter(r => r.v[jc] != null && r.v[j] != null);
+    const qc = S.quantile(rows.map(r => r.v[jc]), .8), qo = S.quantile(rows.map(r => r.v[j]), .8);
+    const tc = new Set(rows.filter(r => r.v[jc] >= qc).map(r => r.id)), to = new Set(rows.filter(r => r.v[j] >= qo).map(r => r.id));
+    return { tc, to, both: [...to].filter(id => tc.has(id)), missed: [...to].filter(id => !tc.has(id)) };
   };
 
   // 차트: Plotly 가 없으면 안내 문구
@@ -72,7 +81,7 @@
       font: { family: '"Pretendard Variable", Pretendard, "Noto Sans KR", sans-serif', size: 13, color: L.C.ink },
       paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', margin: { l: 70, r: 20, t: 16, b: 56 },
       hoverlabel: { font: { size: 13, family: '"Pretendard Variable", Pretendard, sans-serif' }, bgcolor: '#fff', bordercolor: L.C.rule },
-      xaxis: { gridcolor: '#E3E8EA', zerolinecolor: '#D3DADD', linecolor: L.C.rule }, yaxis: { gridcolor: '#E3E8EA', zerolinecolor: '#D3DADD', linecolor: L.C.rule }
+      xaxis: { gridcolor: '#E5ECE5', zerolinecolor: '#D3DED4', linecolor: L.C.rule }, yaxis: { gridcolor: '#E5ECE5', zerolinecolor: '#D3DED4', linecolor: L.C.rule }
     };
     const lay = Object.assign({}, base, layout || {});
     for (const ax of ['xaxis', 'yaxis']) lay[ax] = Object.assign({}, base[ax], (layout || {})[ax] || {});
