@@ -40,9 +40,9 @@
         <pre><code>pip install -r requirements.txt
 python analysis/reanalysis.py   # data/analysis_results.json, js/results.js 생성</code></pre>
         <ul class="plain">
-          <li><a href="https://github.com/goalbangg-prog/Looply-mini-LCA/blob/main/analysis/reanalysis.py" target="_blank" rel="noopener">analysis/reanalysis.py</a> · 원자료부터 모든 결과를 만드는 코드</li>
-          <li><a href="https://github.com/goalbangg-prog/Looply-mini-LCA/blob/main/notebooks/data_preprocessing.ipynb" target="_blank" rel="noopener">notebooks/data_preprocessing.ipynb</a> · 원자료 정제 과정</li>
-          <li><a href="https://github.com/goalbangg-prog/Looply-mini-LCA/blob/main/data/lca_factors_clean.csv" target="_blank" rel="noopener">data/lca_factors_clean.csv</a> · 정제한 데이터</li>
+          <li><a href="https://github.com/goalbangg-prog/Beyond-Carbon/blob/main/analysis/reanalysis.py" target="_blank" rel="noopener">analysis/reanalysis.py</a> · 원자료부터 모든 결과를 만드는 코드</li>
+          <li><a href="https://github.com/goalbangg-prog/Beyond-Carbon/blob/main/notebooks/data_preprocessing.ipynb" target="_blank" rel="noopener">notebooks/data_preprocessing.ipynb</a> · 원자료 정제 과정</li>
+          <li><a href="https://github.com/goalbangg-prog/Beyond-Carbon/blob/main/data/lca_factors_clean.csv" target="_blank" rel="noopener">data/lca_factors_clean.csv</a> · 정제한 데이터</li>
         </ul></section>
 
       <section class="nb"><h2>한계</h2>

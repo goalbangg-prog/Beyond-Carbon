@@ -243,7 +243,7 @@
         <p class="lead">5가지 영향이 모두 있는 원료 ${RES.cluster_n}종을 K-means로 묶어 봤습니다. 결과를 보기 전에 군집 수를 고르는 기준을 먼저 정했고, ${K}개가 골라졌습니다.</p>
         <div class="appendix"><div><b>${silK.toFixed(2)}</b><span>실루엣 점수<br><small>0.5 이상이어야 경계가 뚜렷한 편</small></span></div>
           <div><b>${sens['3개(탄소·자원·산성)'].ARI.toFixed(2)}~${sens['6개(+스모그)'].ARI.toFixed(2)}</b><span>묶는 기준을 바꿨을 때 일치도<br><small>1이면 결과가 같음</small></span></div>
-          <p>경계가 흐리고 기준에 따라 결과가 바뀌어서, 원료를 등급처럼 나누는 데 쓰지 않았습니다. <b>뚜렷한 묶음은 없었다</b>는 것이 결론이고, 계산 과정은 <a href="https://github.com/goalbangg-prog/Looply-mini-LCA/blob/main/analysis/reanalysis.py" target="_blank" rel="noopener">분석 코드</a>에 부록으로 남겼습니다.</p></div>
+          <p>경계가 흐리고 기준에 따라 결과가 바뀌어서, 원료를 등급처럼 나누는 데 쓰지 않았습니다. <b>뚜렷한 묶음은 없었다</b>는 것이 결론이고, 계산 과정은 <a href="https://github.com/goalbangg-prog/Beyond-Carbon/blob/main/analysis/reanalysis.py" target="_blank" rel="noopener">분석 코드</a>에 부록으로 남겼습니다.</p></div>
       </section>
 
       <section class="ch" id="c7"><header><span class="chno">7</span><h2>분석하면서 내린 판단</h2></header>

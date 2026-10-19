@@ -2,7 +2,7 @@
 
 > 환경성적표지(EPD) 평가계수 398건으로, **탄소발자국이 다른 환경영향을 얼마나 대신 보여 줄 수 있는지** 검증한 데이터 분석
 
-**[분석 리포트 열기](https://goalbangg-prog.github.io/Looply-mini-LCA/)** · [분석 코드](analysis/reanalysis.py) · [정제 노트북](notebooks/data_preprocessing.ipynb) · [정제 데이터](data/lca_factors_clean.csv)
+**[분석 리포트 열기](https://goalbangg-prog.github.io/Beyond-Carbon/)** · [분석 코드](analysis/reanalysis.py) · [정제 노트북](notebooks/data_preprocessing.ipynb) · [정제 데이터](data/lca_factors_clean.csv)
 
 ## 질문
 
