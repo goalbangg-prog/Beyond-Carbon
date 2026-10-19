@@ -564,8 +564,17 @@ input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 
 .share-t i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--forest), var(--green)); border-radius: 999px; transition: width .35s var(--ease); }
 .share span { display: block; margin-top: 6px; font-size: 13.5px; color: var(--slate); }
 .share b { color: var(--forest); font-size: 16px; }
+
+/* 1장: 7가지 영향 */
+.impacts { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin: 6px 0 24px; }
+.impacts > div { background: var(--surface); border: 1px solid var(--rule); border-top: 3px solid var(--green); border-radius: var(--r-s); padding: 12px 12px 14px; }
+.impacts b { display: block; font-size: 14.5px; color: var(--forest); margin-bottom: 4px; }
+.impacts span { font-size: 12.5px; color: var(--slate); line-height: 1.45; display: block; }
+.impacts.rv > div { opacity: 0; transform: translateY(14px); transition: opacity .5s ease, transform .6s var(--ease); transition-delay: var(--d); }
+.impacts.rv.in > div { opacity: 1; transform: none; }
+.hero-note b { color: var(--lime); }
 @media (prefers-reduced-motion: reduce) {
-  .rv, .cview .cv-t, .hero .kicker, .hero h1 .ln, .hero .lead, .hero .scope, .hero-fig, .sum > div, .hero .cue, .hero-cmp .cmp tbody tr, .flag .cmp tbody tr, .flag .tbl tbody tr, .flag .shift-call, .formula .f-t { opacity: 1 !important; transform: none !important; }
+  .rv, .impacts > div, .cview .cv-t, .hero .kicker, .hero h1 .ln, .hero .lead, .hero .scope, .hero-fig, .sum > div, .hero .cue, .hero-cmp .cmp tbody tr, .flag .cmp tbody tr, .flag .tbl tbody tr, .flag .shift-call, .formula .f-t { opacity: 1 !important; transform: none !important; }
   .flag .rank, .ch > header .chno, .flag .cmp .eq, .hero-cmp .cmp .eq { transform: none !important; }
   .hero::before, .hero::after { animation: none; }
 }
