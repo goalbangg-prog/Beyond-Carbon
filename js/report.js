@@ -101,7 +101,7 @@
     const pairNames = new Set(rv.same_pairs.flatMap(p => [p.a, p.b]));
     const extra = rv.shared_values.filter(g => !g.items.every(it => pairNames.has(it.name)));
     $('shared').innerHTML = `<table class="tbl"><thead><tr><th>물발자국 값이 일치하는 원료</th><th class="num">값 (m³/kg)</th></tr></thead><tbody>${extra.map(g => `<tr class="${g.items.some(it => /스테인|저항/.test(it.name)) ? 'chk' : ''}"><td>${g.items.map(it => `<b>${esc(it.name.trim())}</b> <small class="muted">${esc(it.cat)}</small>`).join('<br>')}</td><td class="num">${f(g.value)}</td></tr>`).join('')}</tbody></table>`;
-    $('ozone').innerHTML = `<table class="tbl"><thead><tr><th>원료</th><th class="num">오존층영향 (kg CFC-11 eq/kg)</th></tr></thead><tbody>${rv.ozone_hi.map(o => `<tr><td><b>${esc(o.name)}</b></td><td class="num">${f(o.value)}</td></tr>`).join('')}</tbody></table>`;
+    $('ozone').innerHTML = `<table class="tbl"><thead><tr><th>원료</th><th class="num">오존층영향 (kg CFC-11 eq/kg)</th></tr></thead><tbody>${rv.ozone_hi.map(o => `<tr class="${/잉크/.test(o.name) ? 'chk' : ''}"><td><b>${esc(o.name)}</b></td><td class="num">${f(o.value)}</td></tr>`).join('')}</tbody></table>`;
   }
 
   /* ---------- 스크롤 등장 효과 ---------- */
@@ -208,7 +208,7 @@
       { n: 2, t: '기기선', s: `물발자국이 PVC 전선의 약 ${wireX}만 배`, same: [], odd: ['물'] },
       { n: 3, t: '파티클보드·우드칩', s: '오존층영향↔산성비 열 밀림', same: ['탄소', '자원', '부영', '스모그'], odd: ['오존', '산성'], part: true },
       { n: 4, t: '스테인리스강·탄소강, 저항 4종', s: '물발자국 값 일치', same: ['물'], odd: [] },
-      { n: 5, t: '오존층영향 상위 4종', s: '1kg당 0.001 kg CFC-11 eq 이상', same: [], odd: ['오존'] },
+      { n: 5, t: '오존층영향이 큰 원료', s: '옵셋잉크 등 1kg당 0.001 이상', same: [], odd: ['오존'] },
       { n: 6, t: '하천모래', s: `물발자국이 순환 잔골재의 약 ${sandX.toLocaleString('ko-KR')}분의 1`, same: [], odd: ['물'] }
     ].map(f => ({ ...f, has: [...f.same, ...f.odd] }));
     W1 = { wire: wire.value, pvc, med: wMed };
@@ -281,7 +281,7 @@
             <ul class="fl-list"><li><b>스테인리스강 = 탄소강</b> 스테인리스강은 크롬·니켈 합금이라 일반적으로 탄소강보다 공정이 복잡한데 값이 같아요.</li><li><b>저항 4종</b> 금속막·산화금속막·탄소막 등 저항막 재료가 다른데 네 값이 모두 같아요.</li></ul></div></header>
             <div id="shared"></div></article>
           <div>
-            <article class="flag f5"><header><span class="rank">5</span><div><h3>오존층영향 고값 4건</h3><p>오존층영향 값 ${rv.ozone_n}건의 범위는 약 ${Math.round(rv.ozone_range[1] / rv.ozone_range[0] / 1e6)}00만 배예요. 불소·황 화합물은 생산 과정에서 오존층 파괴 물질이 배출될 수 있어 판단을 보류했고, 옵셋잉크는 확인이 필요해요.</p></div></header>
+            <article class="flag f5"><header><span class="rank">5</span><div><h3>오존층영향이 유독 큰 원료 4종</h3><p>오존층영향 값이 있는 ${rv.ozone_n}건 중 1kg당 0.001 kg CFC-11 eq를 넘는 원료예요. 불화수소·무수불화수소·발연황산은 생산 공정에서 오존층 파괴 물질이 나올 수 있는 불소·황 화합물이라 <b>값이 큰 이유가 설명돼요.</b> 반면 <b>옵셋잉크(인쇄용 잉크)는 이렇게 클 이유가 뚜렷하지 않아</b> 확인이 필요해요.</p></div></header>
               <div id="ozone"></div></article>
             <article class="flag f6"><header><span class="rank">6</span><div><h3>하천모래: 물발자국이 지나치게 작음</h3><p>1kg당 ${L.fmt(sand.value)}m³로, 순환 잔골재(${L.fmt(fineAgg)}m³)의 약 ${sandX.toLocaleString('ko-KR')}분의 1이에요. 값이 있는 범주도 탄소발자국·물발자국 둘뿐이에요.</p></div></header></article>
           </div>
