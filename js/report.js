@@ -106,7 +106,7 @@
 
   /* ---------- 스크롤 등장 효과 ---------- */
   function reveal() {
-    const SEL = '.ch > header, .ch > .lead, .impacts, .facts > div, .claim, .cant, .ch > .hint, .ch > .note, .ch > .sub, .ch > .sub-lead, .ch > .concl, .cview, .methods li, .flag, .ex, .checklist, .checklist li, .ck, .yesno > div, .next, .dec details, .formula, .data-grid > *, .story';
+    const SEL = '.ch > header, .ch > .lead, .impacts, .facts > div, .claim, .cant, .ch > .hint, .ch > .note, .ch > .sub, .ch > .sub-lead, .ch > .concl, .cview, .methods li, .flag, .ex, .checklist, .checklist li, .ck, .yesno > div, .dec details, .formula, .data-grid > *, .story';
     const els = [...document.querySelectorAll('#report ' + SEL)];
     const groups = new Map();
     els.forEach(el => { el.classList.add('rv'); const k = el.parentElement; groups.set(k, (groups.get(k) || 0) + 1); el.style.setProperty('--d', ((groups.get(k) - 1) % 6) * 90 + 'ms'); });
@@ -359,7 +359,6 @@
           <tr><td><b>원료 간 우열</b></td><td>1kg당 계수는 원료의 역할과 필요량이 달라 직접 비교할 수 없어요.</td><td>기능단위 기준 비교</td></tr>
           <tr><td><b>계수의 정확도와 현재성</b></td><td>불확도 정보가 없고, 2021년 8월 기준이에요.</td><td>최신 국가 LCI DB·작성지침 확인</td></tr>
         </tbody></table>
-        <div class="next"><h3>다음 단계</h3><p>한국환경산업기술원에 6건의 산정 근거를 문의해 주장 1을 확정하고, 실제 제품 하나의 BOM으로 재계산해 주장 3의 가정을 실제 값으로 바꿀 계획이에요.</p></div>
       </section>
 
       <section class="ch" id="c7"><header><span class="chno">7</span><h2>분석 판단 기록</h2></header>
