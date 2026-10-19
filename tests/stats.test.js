@@ -17,4 +17,4 @@ for (const k of L.OTHERS) { const v = Object.values(L.PP[k]); eq(Math.max(...v.m
 const pr = R.review.same_pairs.find(p => [p.a, p.b].includes('납'));
 eq(pr ? pr.n_same : 0, 5, '납–염소 5개 범주 일치');
 eq(R.cutoff_min_top['20'] >= 30 && R.cutoff_min_top['15'] < 30 ? 1 : 0, 1, '20%가 상위 그룹 30종 이상인 최소 기준');
-eq(R.verdict['물소모'] === '어긋남' ? 1 : 0, 1, '물발자국 판정 = 어긋남');
+eq(R.verdict['물소모'] === '어긋남' ? 1 : 0, 1, '물발자국 = 짐작하기 어렵다(세 기준 모두 절반 미만)');
