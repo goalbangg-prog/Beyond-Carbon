@@ -6,9 +6,9 @@
   L.IMP = [
     { k: '탄소', name: '탄소발자국', sym: 'kg CO₂ eq', plain: '기후변화' },
     { k: '자원', name: '자원발자국', sym: 'kg Sb eq', plain: '광물·화석 자원 고갈' },
-    { k: '산성', name: '산성화', sym: 'kg SO₂ eq', plain: '산성비' },
+    { k: '산성', name: '산성비', sym: 'kg SO₂ eq', plain: '산성화' },
     { k: '부영', name: '부영양화', sym: 'kg PO₄³⁻ eq', plain: '물속 영양 과잉' },
-    { k: '물', name: '물소모', sym: 'm³ H₂O eq', plain: '물 사용' },
+    { k: '물', name: '물소모계수', sym: 'm³ H₂O eq', plain: '물 사용' },
     { k: '스모그', name: '광화학스모그', sym: 'kg C₂H₄ eq', plain: '지표 오존 생성' },
     { k: '오존', name: '오존층영향', sym: 'kg CFC-11 eq', plain: '성층권 오존 파괴' }
   ];
@@ -20,7 +20,6 @@
   L.STAGES = ['원료 및 에너지 생산', '연료원별 사용', '화학반응공정', '폐기물 처리', '수송'];
   // 진녹색(forest) · 초록(green) · 연두(lime)
   L.C = { ink: '#13281D', forest: '#0F3B2A', green: '#2F8A4F', leaf: '#7DB547', lime: '#C6E05A', sage: '#AFC4B4', slate: '#56695D', rule: '#D7E2D8', paper: '#F4F7F1', mint: '#E4F0E3' };
-  L.C.teal = L.C.green; L.C.ochre = L.C.forest; // 데이터 탐색 탭 호환
   L.COLORS = ['#2F8A4F', '#0F3B2A', '#7DB547', '#56695D', '#A3C93A', '#AFC4B4'];
   L.$ = id => document.getElementById(id);
   L.esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -73,28 +72,6 @@
     return { tc, to, both: [...to].filter(id => tc.has(id)), missed: [...to].filter(id => !tc.has(id)) };
   };
 
-  // 차트: Plotly 가 없으면 안내 문구
-  L.plot = (id, traces, layout, extra) => {
-    const el = L.$(id); if (!el) return;
-    if (!window.Plotly) { el.innerHTML = '<p class="empty">차트를 불러오지 못했습니다. 네트워크 연결을 확인한 뒤 새로고침해 주세요.</p>'; return; }
-    const base = {
-      font: { family: '"Pretendard Variable", Pretendard, "Noto Sans KR", sans-serif', size: 13, color: L.C.ink },
-      paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', margin: { l: 70, r: 20, t: 16, b: 56 },
-      hoverlabel: { font: { size: 13, family: '"Pretendard Variable", Pretendard, sans-serif' }, bgcolor: '#fff', bordercolor: L.C.rule },
-      xaxis: { gridcolor: '#E5ECE5', zerolinecolor: '#D3DED4', linecolor: L.C.rule }, yaxis: { gridcolor: '#E5ECE5', zerolinecolor: '#D3DED4', linecolor: L.C.rule }
-    };
-    const lay = Object.assign({}, base, layout || {});
-    for (const ax of ['xaxis', 'yaxis']) lay[ax] = Object.assign({}, base[ax], (layout || {})[ax] || {});
-    lay.margin = Object.assign({}, base.margin, (layout || {}).margin || {});
-    Plotly.newPlot(el, traces, lay, Object.assign({ displayModeBar: false, responsive: true }, extra || {}));
-  };
-  L.purge = id => { const el = L.$(id); if (!el) return; try { if (window.Plotly) Plotly.purge(el); } catch (e) { } el.classList.remove('js-plotly-plot'); el.innerHTML = ''; };
-  L.resizeAll = root => { if (!window.Plotly) return; (root || document).querySelectorAll('.js-plotly-plot').forEach(el => { try { Plotly.Plots.resize(el); } catch (e) { } }); };
-  L.opts = (sel, list, valueFn, textFn, keep) => {
-    const prev = keep ? sel.value : null;
-    sel.innerHTML = list.map(x => `<option value="${L.esc(valueFn(x))}">${L.esc(textFn(x))}</option>`).join('');
-    if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
-  };
   // 화면에 들어올 때 한 번 실행 (차트 그리기, 막대 채우기)
   L.onView = (el, fn) => {
     if (!el) return;

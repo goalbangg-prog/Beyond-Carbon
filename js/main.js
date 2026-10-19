@@ -1,13 +1,13 @@
-/* 탭 전환: 처음 열 때 한 번만 화면을 만든다 (숨겨진 탭에서 차트를 그리면 크기가 0이 되기 때문) */
+/* 탭 전환: 처음 열 때 한 번만 화면을 만든다 */
 (function () {
-  const names = ['report', 'explore', 'notes'];
+  const names = ['report', 'notes'];
   function show(name) {
     if (!names.includes(name)) name = 'report';
     document.querySelectorAll('[data-tab]').forEach(b => { const on = b.dataset.tab === name; b.classList.toggle('on', on); b.setAttribute('aria-current', on ? 'page' : 'false'); });
     names.forEach(n => L.$(n).classList.toggle('hidden', n !== name));
     const pane = L.$(name), t = L.tabs[name];
-    try { if (!t.built) { t.build(); t.built = true; } else L.resizeAll(pane); }
-    catch (e) { pane.innerHTML = '<div class="panel"><p class="empty">화면을 만드는 중 오류가 발생했습니다: ' + L.esc(e.message) + '</p></div>'; console.error(e); }
+    try { if (!t.built) { t.build(); t.built = true; } }
+    catch (e) { pane.innerHTML = '<p class="empty">화면을 만드는 중 오류가 발생했다: ' + L.esc(e.message) + '</p>'; console.error(e); }
     pane.classList.remove('enter'); void pane.offsetWidth; if (!L.reduce) pane.classList.add('enter');
     window.scrollTo(0, 0);
   }

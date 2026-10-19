@@ -18,7 +18,7 @@ async def main():
         await pg.evaluate("document.getElementById('c4').scrollIntoView()"); await pg.wait_for_timeout(400)
         await pg.fill("#thSlider", "50"); await pg.dispatch_event("#thSlider", "input"); await pg.wait_for_timeout(600)
         assert await pg.inner_text("#thN") == "21"
-        for t in ["explore", "notes", "report"]:
+        for t in ["notes", "report"]:
             await pg.click(f'[data-tab="{t}"]'); await pg.wait_for_timeout(500)
         assert not errs, errs
         print("ok: 첫 화면 와플, 스크롤 단계, 기준 슬라이더, 탭 전환, 오류 없음"); await b.close()
