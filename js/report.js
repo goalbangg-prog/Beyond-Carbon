@@ -65,7 +65,7 @@
       $('ann').innerHTML = ann;
       $('stMeter').classList.toggle('show', step >= 3);
       $('stMeter').innerHTML = `<span class="mt-l">${L.josa(NAME[lens], '이', '가')} 큰 원료</span><b>${cap['다른영향상위']}종</b>
-        <span class="mt-got"><i></i>탄소발자국도 큼 <b>${cap['함께상위']}</b></span><span class="mt-miss"><i></i>탄소발자국은 크지 않음 <b>${cap['빠진']}</b></span>`;
+        <span class="mt-got"><i></i>탄소발자국도 큼 <b>${cap['함께상위']}종</b></span><span class="mt-miss"><i></i>탄소발자국은 크지 않음 <b>${cap['빠진']}종</b></span>`;
       document.querySelectorAll('[data-slens]').forEach(b => b.setAttribute('aria-pressed', b.dataset.slens === lens));
     };
     const cards = [...document.querySelectorAll('.step')];
@@ -99,10 +99,19 @@
   function pairTable(p) {
     const order = ['자원발자국', '탄소발자국', '오존층영향', '산성비', '부영양화', '광화학스모그', '물소모'];
     const disp = k => (k === '물소모' ? '물발자국' : k), fx = v => (v == null ? '<span class="muted">빈 값</span>' : String(Number(v.toPrecision(10))));
-    return `<table class="cmp"><thead><tr><th>영향범주</th><th class="num">${esc(p.a)}</th><th class="num">${esc(p.b)}</th><th></th></tr></thead><tbody>${order.filter(k => p.a_values[k] != null || p.b_values[k] != null).map(k => {
-      const x = p.a_values[k], y = p.b_values[k], same = x != null && y != null && Math.abs(x - y) <= Math.abs(x) * 1e-9;
-      return `<tr class="${same ? 'same' : ''}"><td>${disp(k)}</td><td class="num">${fx(x)}</td><td class="num">${fx(y)}</td><td>${same ? '<b class="eq">같음</b>' : ''}</td></tr>`;
+    const eq = (x, y) => x != null && y != null && Math.abs(x - y) <= Math.abs(x) * 1e-9;
+    // 한쪽에만 값이 있는 칸끼리 같은 숫자인지 (칸 밀림 의심)
+    const shiftA = new Set(), shiftB = new Set();
+    order.forEach(ka => order.forEach(kb => { if (ka !== kb && p.b_values[ka] == null && p.a_values[kb] == null && eq(p.a_values[ka], p.b_values[kb])) { shiftA.add(ka); shiftB.add(kb); } }));
+    const rows = order.filter(k => p.a_values[k] != null || p.b_values[k] != null);
+    const tbl = `<table class="cmp"><thead><tr><th>영향범주</th><th class="num">${esc(p.a)}</th><th class="num">${esc(p.b)}</th><th></th></tr></thead><tbody>${rows.map((k, i) => {
+      const x = p.a_values[k], y = p.b_values[k], same = eq(x, y), sh = shiftA.has(k) || shiftB.has(k);
+      return `<tr class="${same ? 'same' : ''}${sh ? ' shift-row' : ''}" style="--i:${i}"><td>${disp(k)}</td><td class="num${shiftA.has(k) ? ' shift' : ''}">${fx(x)}</td><td class="num${shiftB.has(k) ? ' shift' : ''}">${fx(y)}</td><td>${same ? '<b class="eq">같음</b>' : sh ? '<b class="eq sh">같은 숫자, 다른 칸</b>' : ''}</td></tr>`;
     }).join('')}</tbody></table>`;
+    if (!shiftA.size) return tbl;
+    const ka = [...shiftA][0], kb = [...shiftB][0];
+    return tbl + `<div class="shift-call"><div><span>${esc(p.a)}</span><b>${disp(ka)}</b><strong>${fx(p.a_values[ka])}</strong></div><i aria-hidden="true">=</i><div><span>${esc(p.b)}</span><b>${disp(kb)}</b><strong>${fx(p.b_values[kb])}</strong></div>
+      <p>범주가 다른데 숫자가 열 자리까지 같다. 두 원료 모두 이 두 칸 중 한 칸만 값이 있고 나머지 한 칸은 비어 있다. 원래 같은 칸에 있어야 할 값이 입력할 때 옆 칸으로 밀렸다고 보는 것이 자연스럽다.</p></div>`;
   }
   function review() {
     const rv = RES.review, f = L.fmt;
@@ -112,6 +121,22 @@
     const extra = rv.shared_values.filter(g => !g.items.every(it => pairNames.has(it.name)));
     $('shared').innerHTML = `<table class="tbl"><thead><tr><th>같은 물발자국 값을 쓰는 원료</th><th class="num">값 (m³/kg)</th></tr></thead><tbody>${extra.map(g => `<tr><td>${g.items.map(it => `<b>${esc(it.name.trim())}</b> <small class="muted">${esc(it.cat)}</small>`).join('<br>')}</td><td class="num">${f(g.value)}</td></tr>`).join('')}</tbody></table>`;
     $('ozone').innerHTML = `<table class="tbl"><thead><tr><th>원료</th><th class="num">오존층영향 (kg CFC-11 eq/kg)</th></tr></thead><tbody>${rv.ozone_hi.map(o => `<tr><td><b>${esc(o.name)}</b></td><td class="num">${f(o.value)}</td></tr>`).join('')}</tbody></table>`;
+  }
+
+  /* ---------- 스크롤 등장 효과 ---------- */
+  function reveal() {
+    const SEL = '.ch > header, .ch > .lead, .ch > .hint, .ch > .note, .ch > .sub, .methods li, .flag, .ex, .checklist, .checklist li, .ck, .yesno > div, .next, .dec details, .formula, .score, .sc-why, .more-box, .data-grid > *, .story';
+    const els = [...document.querySelectorAll('#report ' + SEL)];
+    const groups = new Map();
+    els.forEach(el => { el.classList.add('rv'); const k = el.parentElement; groups.set(k, (groups.get(k) || 0) + 1); el.style.setProperty('--d', ((groups.get(k) - 1) % 6) * 90 + 'ms'); });
+    const show = el => {
+      el.classList.add('in');
+      el.querySelectorAll('[data-n]').forEach(n => L.count(n, +n.dataset.n, 0, 1100));
+    };
+    if (L.reduce || !('IntersectionObserver' in window)) return els.forEach(show);
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { show(e.target); io.unobserve(e.target); } }), { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+    els.forEach(el => io.observe(el));
+    requestAnimationFrame(() => document.querySelector('.hero').classList.add('go'));
   }
 
   /* ---------- 계산 예시의 막대 ---------- */
@@ -126,7 +151,6 @@
     const pairNs = LENSES.map(k => CI(k).n), nMin = Math.min(...pairNs), nMax = Math.max(...pairNs);
     const ozMiss = 100 - Math.round(L.coverage(POOL, 6) * 100), ozN = L.has(POOL, 6).length;
     const wcw = RES.within_category_carbon_water, wcr = RES.within_category_carbon_resource, nb = RES.carbon_water_without_basic_chem;
-    const ks = RES.k_scores, sens = RES.sensitivity, K = RES.chosen_k, silK = ks.find(x => x.k === K).실루엣;
     const w = CAP('물'), a = CAP('산성'), cb = L.PP['물'][POOL.find(r => r.name === '골판지').id];
     const tcN = L.top20('물').tc.size;
     const basicShare = Math.round(POOL.filter(r => r.category === '기초화학물질').length / POOL.length * 100);
@@ -163,22 +187,19 @@
       ['다시 확인할 값의 순서', '오류일 가능성과 계산에 주는 영향을 함께 보고 정했다', '납·염소처럼 성질이 전혀 다른 원료의 값이 모두 같으면 우연으로 설명하기 어렵다. 기기선은 오류라면 제품 결과를 수천 배 바꾼다. 오존층영향이 큰 불소 화합물처럼 공정을 생각하면 설명이 되는 값은 뒤에 두었다.', '찾은 순서대로 늘어놓으면 덜 중요한 값이 앞에 온다.'],
       ['다시 확인할 값의 처리', '오류라고 쓰지 않고, 분석에서도 빼지 않았다', '원본 자료와 대조하기 전에는 오류인지 알 수 없다. 대신 이 값들을 뺀 결과를 따로 계산해 비교했다.', '임의로 빼거나 고치면 원자료를 바꾼 분석이 된다.'],
       ['1만 배 기준', '중앙값의 1만 배 이상, 1만분의 1 이하만 골랐다', `같은 범주 안에서도 수천 배 차이는 흔하다. 물발자국 2위인 ${pcb.name}도 중앙값의 약 ${Math.round(pcb.v[4] / wMed / 100) * 100}배다. 그보다 확실히 튀는 값만 고르려고 1만 배로 정했다.`, '기준을 1천 배로 낮추면 공정 특성상 원래 큰 값까지 섞인다.'],
-      ['결론의 범위', '원료 1kg당 값에 대한 결론으로 한정했다', '제품의 환경영향은 원료마다 ‘사용량 × 1kg당 값’을 더해 계산한다. 이 데이터에는 사용량이 없으므로 제품끼리의 관계는 알 수 없다. 4장의 제품 계산은 가상의 예다.', '초기 버전은 “탄소발자국으로 원료를 고르면 놓친다”처럼 제품 선택 문제로 넓혀 썼다.'],
-      ['순위를 매기는 대상', '비교하는 두 영향 값이 모두 있는 원료끼리 순위를 매겼다', '값이 있는 원료 수가 영향마다 다르다(탄소발자국 187종, 물발자국 163종). 서로 다른 대상에서 매긴 순위를 비교하면 결과가 틀어진다.', '초기 버전은 이 문제로 일부 원료 수를 잘못 셌다.'],
-      ['빈 값', '0으로 채우지 않았다', '원자료의 ‘해당없음’은 측정하지 않았다는 뜻이지 영향이 없다는 뜻이 아니다.', '0으로 채우면 빈 값이 가장 작은 값처럼 다뤄진다.'],
-      ['비교 방법', '값의 크기 대신 순위로 비교했다', '같은 영향 안에서도 값이 수십만 배까지 차이 난다. 값으로 비교하면 큰 값 몇 개가 결과를 정한다.', '평균이나 일반 상관계수를 쓰면 극단값 몇 개에 끌려간다.'],
+      ['결론의 범위', '원료 1kg당 값에 대한 결론으로 한정했다', '제품의 환경영향은 원료마다 ‘사용량 × 1kg당 값’을 더해 계산한다. 이 데이터에는 사용량이 없으므로 제품끼리의 관계는 알 수 없다. 4장의 제품 계산은 가상의 예다.', '원료 값의 관계를 제품의 관계처럼 쓰게 된다.'],
+      ['비교 방법', '값의 크기 대신 순위로, 두 값이 모두 있는 원료끼리 비교했다', '같은 영향 안에서도 값이 수십만 배까지 차이 난다. 값으로 비교하면 큰 값 몇 개가 결과를 정한다. 또 값이 있는 원료 수가 영향마다 달라(탄소발자국 187종, 물발자국 163종) 두 값이 모두 있는 원료끼리 순위를 매겼다. ‘해당없음’은 0으로 채우지 않았다.', '평균이나 일반 상관계수를 쓰면 극단값 몇 개에 끌려간다.'],
       ['상위 20% 기준', '모든 영향에서 상위 원료가 30종 이상이 되는 가장 작은 기준', `30종이면 원료 1종에 비율이 약 3%p 움직이고, 15종이면 약 7%p 움직인다. 15% 기준이면 가장 작은 그룹이 ${RES.cutoff_min_top['15']}종, 10%면 ${RES.cutoff_min_top['10']}종이다.`, '20% 하나만 보면 부영양화처럼 기준에 따라 결과가 달라지는 경우를 놓친다. 그래서 10·20·30%를 함께 봤다.'],
-      ['소재군 차이', '소재군별로, 가장 많은 소재군을 빼고 다시 계산했다', `기초화학물질을 빼도 탄소발자국–물발자국 ρ는 ${nb.rho.toFixed(2)}(${nb.n}종)였다.`, '소재군이 섞여 생긴 결과였다면 결론이 바뀌었을 것이다.'],
-      ['군집 분석', '결론에 쓰지 않았다', `비슷한 원료끼리 자동으로 묶어 봤지만(K-means) 경계가 흐렸다(실루엣 점수 ${silK.toFixed(2)}, 0.5 이상이어야 뚜렷한 편). 묶는 기준을 바꾸면 결과도 달라졌다(일치도 ${sens['3개(탄소·자원·산성)'].ARI.toFixed(2)}~${sens['6개(+스모그)'].ARI.toFixed(2)}).`, '흐린 묶음을 등급처럼 보여 주게 된다.']
+      ['소재군 차이', '소재군별로, 가장 많은 소재군을 빼고 다시 계산했다', `기초화학물질을 빼도 탄소발자국–물발자국 ρ는 ${nb.rho.toFixed(2)}(${nb.n}종)였다.`, '소재군이 섞여 생긴 결과였다면 결론이 바뀌었을 것이다.']
     ];
-    const chapters = [['c1', '데이터'], ['c2', '어떻게 찾았나'], ['c3', '다시 확인할 값'], ['c4', '계산에 주는 영향'], ['c5', '탄소발자국만 보면 충분한가'], ['c6', '결과 확인과 한계'], ['c7', '분석 과정의 판단']];
+    const chapters = [['c1', '데이터'], ['c2', '어떻게 찾았나'], ['c3', '다시 확인할 값'], ['c4', '계산에 주는 영향'], ['c5', '탄소발자국과 다른 영향'], ['c6', '결과 확인과 한계'], ['c7', '분석 과정의 판단']];
     const steps = [
       ['탄소발자국 순서대로 세우면', `원료 ${POOL.length}종을 탄소발자국이 작은 것부터 큰 것까지 줄 세웠다. 다른 영향도 순서가 똑같다면 모든 점이 이 대각선 위에 놓인다.`],
       ['세로축을 물발자국으로 바꾸면', `점이 넓게 흩어진다. 탄소발자국이 크다고 물발자국도 큰 것은 아니라는 뜻이다. 순위상관 ρ는 <mark>${CI('물').rho.toFixed(2)}</mark>로, 거의 비례하지 않는다. ρ가 1이면 순서가 완전히 같고, 0이면 아무 관계가 없다.`],
       ['탄소발자국이 큰 원료', `탄소발자국 상위 20%인 원료는 <mark>${tcN}종</mark>이다. 오른쪽 세로 띠에 있다.`],
       ['물발자국이 큰 원료', `물발자국 상위 20%인 원료는 <mark>${w['다른영향상위']}종</mark>이다. 위쪽 가로 띠에 있다. 두 값이 비례한다면 두 띠에 같은 원료가 모여야 한다.`],
-      [`두 띠에 함께 있는 원료는 ${w['함께상위']}종`, `물발자국이 큰 ${w['다른영향상위']}종 중 탄소발자국도 큰 원료는 <mark>${w['함께상위']}종</mark>이다. 나머지 <mark>${w['빠진']}종</mark>은 물발자국은 크지만 탄소발자국은 크지 않다.<small>두 값이 아무 관계가 없어도 20%(33종 중 7종 정도)는 우연히 겹친다. 14종은 그보다 많지만 10종 중 4종 꼴이다.</small>`],
-      ['예: 골판지', `골판지는 탄소발자국이 <mark>${L.topLabel(cb.c)}</mark>로 작은 편이지만, 물발자국은 <mark>${L.topLabel(cb.o)}</mark>로 큰 편이다. 제품에서 골판지의 물발자국이 실제로 클지는 얼마나 쓰느냐에 달려 있다.`],
+      [`두 띠에 함께 있는 원료는 ${w['함께상위']}종`, `물발자국이 큰 ${w['다른영향상위']}종 중 <mark class="m-got">탄소발자국도 큰 원료는 ${w['함께상위']}종</mark>이다(진녹색 점). 나머지 <mark class="m-miss">${w['빠진']}종은 물발자국만 크고 탄소발자국은 크지 않다</mark>(주황색 점).<small>두 값이 아무 관계가 없어도 20%(33종 중 7종 정도)는 우연히 겹친다. 14종은 그보다 많지만 10종 중 4종 꼴이다.</small>`],
+      ['예: 골판지', `골판지는 탄소발자국이 <mark>${L.topLabel(cb.c)}</mark>로 작은 편이지만, 물발자국은 <mark class="m-miss">${L.topLabel(cb.o)}</mark>로 큰 편이다. 제품에서 골판지의 물발자국이 실제로 클지는 얼마나 쓰느냐에 달려 있다.`],
       ['산성비는 탄소발자국에 비례한다', `산성비로 바꾸면 점이 대각선 근처에 모인다. 산성비가 큰 ${a['다른영향상위']}종 중 <mark>${a['함께상위']}종</mark>이 탄소발자국도 크다.<span class="slens"><em>다른 영향범주 보기</em>${LENSES.map(k => `<button type="button" data-slens="${k}" aria-pressed="false">${NAME[k]}</button>`).join('')}</span>`]
     ];
     const leadPair = rv.same_pairs.find(p => [p.a, p.b].includes('납'));
@@ -188,7 +209,7 @@
       <div class="hero-in">
         <div class="hero-copy">
           <p class="kicker">환경성적표지(EPD) 평가계수 ${D.length}건 점검</p>
-          <h1>평가계수 ${D.length}건에서<br>다시 확인할 값 6건을 찾았다</h1>
+          <h1><span class="ln">평가계수 ${D.length}건에서</span><span class="ln">다시 확인할 값 <em class="hn">6건</em>을 찾았다</span></h1>
           <p class="lead">평가계수는 제품의 환경성적을 계산할 때 원료 사용량에 그대로 곱하는 값이다. 공공데이터포털에 공개된 ${D.length}건을 모두 살펴보니, 서로 다른 원료의 값이 통째로 같거나 같은 종류의 원료보다 100만 배 넘게 큰 값이 있었다. 이런 값 하나가 제품 전체의 계산 결과를 바꿀 수 있다.</p>
           <p class="scope">원본 자료와 대조하기 전이라 오류라고 단정하지는 않았다.</p>
         </div>
@@ -211,7 +232,7 @@
       <div class="chapters">
 
       <section class="ch" id="c1"><header><span class="chno">1</span><h2>어떤 데이터인가</h2></header>
-        <p class="lead">환경성적표지는 제품이 만들어지고 버려지기까지 환경에 주는 영향을 탄소발자국, 물발자국 등 7개 범주의 숫자로 공개하는 제도다. 기준을 넘어야 받는 인증이 아니라, 계산 결과를 제3자에게 검증받아 공개하는 제도다. 평가계수는 이 계산에 쓰는 기초 자료로, 원료 1kg이나 전기 1kWh처럼 정해진 양을 쓸 때 생기는 환경영향을 미리 계산해 둔 값이다. 컨설턴트는 제품에 들어간 원료 사용량에 이 값을 곱해 결과를 낸다. 계수가 틀리면 결과도 그만큼 틀린다.</p>
+        <p class="lead">환경성적표지는 제품이 만들어지고 버려지기까지 환경에 주는 영향을 탄소발자국, 물발자국 등 7개 범주의 숫자로 공개하는 제도다. <b>기준을 넘어야 받는 인증이 아니라, 계산 결과를 제3자에게 검증받아 공개하는 제도</b>다. 평가계수는 이 계산에 쓰는 기초 자료로, 원료 1kg이나 전기 1kWh처럼 정해진 양을 쓸 때 생기는 환경영향을 미리 계산해 둔 값이다. 컨설턴트는 제품에 들어간 원료 사용량에 이 값을 곱해 결과를 낸다. <b>계수가 틀리면 결과도 그만큼 틀린다.</b></p>
         <div class="data-grid two-col">
           <table class="src"><tbody>
             <tr><th>데이터</th><td>한국환경산업기술원_환경성적표지 평가계수</td></tr>
@@ -229,25 +250,25 @@
       </section>
 
       <section class="ch" id="c2"><header><span class="chno">2</span><h2>어떻게 찾았나</h2></header>
-        <p class="lead">처음에는 탄소발자국과 다른 영향범주를 비교하고 있었다(5장). 그러다 납과 염소의 값이 다섯 범주에서 모두 같은 것을 발견했고, 비슷한 문제가 더 있는지 ${D.length}건 전체를 네 가지 방법으로 확인했다.</p>
+        <p class="lead">처음에는 탄소발자국과 다른 영향범주를 비교하고 있었다(5장). 그러다 <b>납과 염소의 값이 다섯 범주에서 모두 같은 것</b>을 발견했고, 비슷한 문제가 더 있는지 ${D.length}건 전체를 네 가지 방법으로 확인했다.</p>
         <ol class="methods">
-          <li><b>값이 통째로 같은 원료</b><p>서로 다른 원료인데 세 개 이상 범주의 값이 소수점 끝자리까지 같은 경우.</p><strong>${rv.same_pairs.length}쌍</strong></li>
-          <li><b>한 범주만 같은 원료</b><p>원료 ${POOL.length}종 중 한 범주의 값이 다른 원료와 완전히 같은 경우. 위의 두 쌍은 빼고 셌다.</p><strong>${sharedExtra.length}묶음</strong></li>
-          <li><b>자릿수가 튀는 값</b><p>같은 범주 원료들의 중앙값보다 1만 배 이상 크거나 1만분의 1 이하로 작은 값.</p><strong>${rv.extreme.length}건</strong></li>
-          <li><b>오존층영향이 큰 값</b><p>1kg당 0.001 kg CFC-11 eq 이상인 값. 값이 있는 ${rv.ozone_n}건 중에서 찾았다.</p><strong>${rv.ozone_hi.length}건</strong></li>
+          <li><b>값이 통째로 같은 원료</b><p>서로 다른 원료인데 세 개 이상 범주의 값이 소수점 끝자리까지 같은 경우.</p><strong><span data-n="${rv.same_pairs.length}">0</span>쌍</strong></li>
+          <li><b>한 범주만 같은 원료</b><p>원료 ${POOL.length}종 중 한 범주의 값이 다른 원료와 완전히 같은 경우. 위의 두 쌍은 빼고 셌다.</p><strong><span data-n="${sharedExtra.length}">0</span>묶음</strong></li>
+          <li><b>자릿수가 튀는 값</b><p>같은 범주 원료들의 중앙값보다 1만 배 이상 크거나 1만분의 1 이하로 작은 값.</p><strong><span data-n="${rv.extreme.length}">0</span>건</strong></li>
+          <li><b>오존층영향이 큰 값</b><p>1kg당 0.001 kg CFC-11 eq 이상인 값. 값이 있는 ${rv.ozone_n}건 중에서 찾았다.</p><strong><span data-n="${rv.ozone_hi.length}">0</span>건</strong></li>
         </ol>
         <p class="hint">찾은 값은 다음 장에서 <b>오류일 가능성이 높고, 오류라면 계산 결과를 크게 바꾸는 것</b>부터 순서를 매겼다. 같은 계열 소재가 공통 자료를 쓰는 경우처럼 설명이 되는 값은 뒤로 보냈다.</p>
       </section>
 
       <section class="ch" id="c3"><header><span class="chno">3</span><h2>원자료에서 다시 확인할 값</h2></header>
-        <p class="lead">아래 여섯 가지는 원본 자료와 대조해 볼 필요가 있다. 오류로 확인된 것은 아니다.</p>
+        <p class="lead">아래 여섯 가지는 <b>원본 자료와 대조해 볼 필요가 있다.</b> 오류로 확인된 것은 아니다. 1~3번은 입력 실수로 보이는 흔적이 뚜렷하고, 4~6번은 설명이 될 여지가 있다.</p>
 
-        <article class="flag f1"><header><span class="rank">1</span><div><h3>납과 염소의 값이 모두 같다</h3><p>금속인 납과 화학물질인 염소는 만드는 방법이 전혀 다르다. 그런데 값이 있는 다섯 범주가 소수점 아래 아홉 자리까지 모두 같다. ${D.length}건 중 다섯 범주가 모두 같은 경우는 이 한 쌍뿐이다. 한쪽 값을 다른 쪽에 잘못 옮겨 적었을 가능성이 크다.</p></div></header>
+        <article class="flag f1"><header><span class="rank">1</span><div><h3>납과 염소의 값이 모두 같다</h3><p>금속인 납과 화학물질인 염소는 만드는 방법이 전혀 다르다. 그런데 <b>값이 있는 다섯 범주가 소수점 아래 아홉 자리까지 모두 같다.</b> ${D.length}건 중 다섯 범주가 모두 같은 경우는 이 한 쌍뿐이다. <em class="warn">한쪽 값을 다른 쪽에 잘못 옮겨 적었을 가능성이 크다.</em></p></div></header>
           <div id="pairLead"></div></article>
 
-        <article class="flag f2"><header><span class="rank">2</span><div><h3>기기선의 물발자국이 PVC 전선의 100만 배가 넘는다</h3><p>기기선(UL 1007/1569) 1kg을 만드는 데 물 ${Math.round(wire.value)}m³, 즉 약 ${Math.round(wire.value)}톤이 든다는 값이다. 같은 전선인 PVC 전선은 ${L.fmt(pvc)}m³로 약 ${Math.round(wire.value / pvc / 1e4)}만 배 차이가 난다. 다른 범주는 두 전선이 비슷하다(탄소발자국 ${wireRow.v[0]} 대 ${pvcRow.v[0].toFixed(2)}). 또 기기선의 다른 값은 ${wireRow.v[0]}, ${wireRow.v[1]}처럼 짧게 적혀 있는데, 물발자국만 ${wire.value}처럼 길게 적혀 있다. 이 칸만 다른 자료에서 왔거나 단위를 잘못 바꿨을 가능성이 있다.</p></div></header></article>
+        <article class="flag f2"><header><span class="rank">2</span><div><h3>기기선의 물발자국이 PVC 전선의 100만 배가 넘는다</h3><p>기기선(UL 1007/1569) 1kg을 만드는 데 물 ${Math.round(wire.value)}m³, 즉 약 ${Math.round(wire.value)}톤이 든다는 값이다. 같은 전선인 PVC 전선은 ${L.fmt(pvc)}m³로 <b>약 ${Math.round(wire.value / pvc / 1e4)}만 배</b> 차이가 난다. 다른 범주는 두 전선이 비슷하다(탄소발자국 ${wireRow.v[0]} 대 ${pvcRow.v[0].toFixed(2)}). 또 기기선의 다른 값은 ${wireRow.v[0]}, ${wireRow.v[1]}처럼 짧게 적혀 있는데, 물발자국만 ${wire.value}처럼 길게 적혀 있다. <em class="warn">이 칸만 다른 자료에서 왔거나 단위를 잘못 바꿨을 가능성이 있다.</em></p></div></header></article>
 
-        <article class="flag f3"><header><span class="rank">3</span><div><h3>파티클보드와 우드칩: 같은 숫자가 서로 다른 칸에 있다</h3><p>두 목재 원료는 다섯 범주 중 네 범주 값이 같다. 같은 목재 계열이라 공통 자료를 썼을 수는 있다. 문제는 <b>파티클보드의 오존층영향과 우드칩의 산성비가 0.000999692로 같은 숫자</b>라는 점이다. 같은 값이 한 칸 옆에 들어가 있어, 입력할 때 칸이 밀렸을 가능성이 있다. 파티클보드의 오존층영향은 값이 있는 ${rv.ozone_n}건 중 다섯 번째로 크고, 이보다 큰 네 건은 모두 화학물질이나 잉크다.</p></div></header>
+        <article class="flag f3"><header><span class="rank">3</span><div><h3>파티클보드의 오존층영향과 우드칩의 산성비가 같은 숫자다</h3><p>두 목재 원료는 네 범주 값이 같다. 같은 목재 계열이라 공통 자료를 썼다면 이상한 일은 아니다. 문제는 나머지 칸이다. <b>파티클보드의 오존층영향과 우드칩의 산성비가 0.000999692로, 열 자리까지 같은 숫자</b>다. 오존층영향과 산성비는 단위도 계산 방법도 다른 범주라 값이 우연히 같을 수 없다. <em class="warn">입력할 때 한 칸이 밀렸을 가능성이 높다.</em> 실제로 파티클보드의 오존층영향은 값이 있는 ${rv.ozone_n}건 중 다섯 번째로 큰데, 이보다 큰 네 건은 모두 불소 화합물이나 잉크다. 목재가 이 정도로 오존층을 파괴한다고 보기는 어렵다.</p></div></header>
           <div id="pairWood"></div></article>
 
         <div class="two flag-two">
@@ -262,16 +283,16 @@
       </section>
 
       <section class="ch" id="c4"><header><span class="chno">4</span><h2>계산 결과에 주는 영향</h2></header>
-        <p class="lead">위의 값을 그대로 쓰면 제품 결과가 얼마나 달라지는지 두 가지 가상의 예로 계산했다. 사용량은 설명을 위해 정한 값이다.</p>
+        <p class="lead">위의 값을 그대로 쓰면 <b>제품 결과가 얼마나 달라지는지</b> 두 가지 가상의 예로 계산했다. 사용량은 설명을 위해 정한 값이다.</p>
         <div class="examples">
           <article class="ex"><h3>예 1. 전선 20g이 들어간 소형 가전</h3>
             <p>원료가 모두 2kg이고 그중 전선이 20g인 제품을 가정했다. 나머지 원료 1.98kg은 물발자국 중앙값(1kg당 ${L.fmt(wMed)}m³)을 썼다.</p>
             ${exBars([{ label: '기기선 값으로 계산', v: ex1A, text: vol(ex1A), hi: true }, { label: 'PVC 전선 값으로 계산', v: ex1B, text: vol(ex1B) }])}
-            <p class="ex-r">전선 값 하나 때문에 제품의 물발자국이 <b>약 ${(Math.round(ex1A / ex1B / 100) * 100).toLocaleString('ko-KR')}배</b> 달라진다. 기기선 값으로 계산하면 제품 물발자국의 ${ex1Share.toFixed(1)}%가 20g짜리 전선에서 나온다.</p></article>
+            <p class="ex-r">전선 값 하나 때문에 제품의 물발자국이 <b>약 ${(Math.round(ex1A / ex1B / 100) * 100).toLocaleString('ko-KR')}배</b> 달라진다. 기기선 값으로 계산하면 <b>제품 물발자국의 ${ex1Share.toFixed(1)}%가 20g짜리 전선</b>에서 나온다.</p></article>
           <article class="ex"><h3>예 2. 콘크리트에 들어가는 잔골재 ${kgAgg}kg</h3>
             <p>천연 모래와 재활용 골재 중 무엇을 쓸지 비교하는 상황을 가정했다.</p>
             ${exBars([{ label: '순환 잔골재 값으로 계산', v: ex2F, text: vol(ex2F), hi: true }, { label: '하천모래 값으로 계산', v: ex2S, text: vol(ex2S) }])}
-            <p class="ex-r">재활용 골재의 물발자국이 <b>약 ${Math.round(ex2F / ex2S).toLocaleString('ko-KR')}배</b> 크게 나온다. 하천모래 값이 너무 작게 들어가 있다면, 재활용 원료가 실제보다 불리해 보일 수 있다.</p></article>
+            <p class="ex-r">재활용 골재의 물발자국이 <b>약 ${Math.round(ex2F / ex2S).toLocaleString('ko-KR')}배</b> 크게 나온다. 하천모래 값이 너무 작게 들어가 있다면, <b>재활용 원료가 실제보다 불리해 보일 수 있다.</b></p></article>
         </div>
         <p class="note">납과 염소는 어느 쪽이 원래 값인지 알 수 없어 계산 예를 들지 않았다. 다만 둘 중 하나를 쓰는 제품은 다섯 범주 모두 다른 원료의 값으로 계산되고 있을 수 있다.</p>
 
@@ -283,8 +304,8 @@
           <li><b>빈 값</b>‘해당없음’을 0으로 넣지 않는다. 탄소발자국만 있는 항목은 다른 범주를 별도 자료로 채운다.</li></ol></div>
       </section>
 
-      <section class="ch" id="c5"><header><span class="chno">5</span><h2>탄소발자국만 보면 충분한가</h2></header>
-        <p class="lead">환경성적표지는 7개 범주를 공개하지만, 그다음 단계인 저탄소제품 인증은 탄소발자국만 본다. 그래서 탄소발자국이 큰 원료는 다른 영향도 큰지, 원료 ${POOL.length}종의 1kg당 값으로 확인했다. 값이 수십만 배까지 차이 나서 크기 대신 순서(순위)로 비교했고, 두 순서가 얼마나 같은지는 순위상관 ρ로 나타냈다.</p>
+      <section class="ch" id="c5"><header><span class="chno">5</span><h2>탄소발자국과 다른 영향은 비례하는가</h2></header>
+        <p class="lead">환경성적표지는 7개 범주를 공개하지만, 그다음 단계인 저탄소제품 인증은 탄소발자국만 본다. 그래서 <b>탄소발자국이 큰 원료는 다른 영향도 큰지</b>, 원료 ${POOL.length}종의 1kg당 값으로 확인했다. 값이 수십만 배까지 차이 나서 크기 대신 순서(순위)로 비교했고, 두 순서가 얼마나 같은지는 순위상관 ρ로 나타냈다. 결과는 <b>산성비·자원발자국은 비례하고, 물발자국은 거의 비례하지 않았다.</b></p>
         <div class="story">
           <div class="st-fig"><div class="st-sticky"><figure class="plotcard" id="stPlot"></figure><div class="meter" id="stMeter"></div></div></div>
           <div class="st-steps">${steps.map(([h, t], i) => `<article class="step" data-step="${i}"><span class="sn">${i + 1} / ${steps.length}</span><h3>${h}</h3><p>${t}</p></article>`).join('')}</div>
@@ -308,7 +329,7 @@
       </section>
 
       <section class="ch" id="c6"><header><span class="chno">6</span><h2>결과 확인과 한계</h2></header>
-        <p class="lead">5장의 결과가 우연이나 데이터 구성 때문인지 다섯 가지로 확인했다. 어느 경우에도 물발자국은 탄소발자국에 거의 비례하지 않았다.</p>
+        <p class="lead">5장의 결과가 우연이나 데이터 구성 때문인지 다섯 가지로 확인했다. <b>어느 경우에도 물발자국은 탄소발자국에 거의 비례하지 않았다.</b></p>
         <div class="checks">
           <div class="ck"><h3>원료를 다시 뽑아 계산해도</h3><p>2,000번 다시 계산하면 탄소발자국–물발자국 ρ는 <b>${CI('물').lo.toFixed(2)}~${CI('물').hi.toFixed(2)}</b> 사이였다.</p></div>
           <div class="ck"><h3>가장 많은 소재군을 빼도</h3><p>원료의 ${basicShare}%인 기초화학물질을 빼고 계산해도 ρ는 <b>${nb.rho.toFixed(2)}</b>(${nb.n}종)였다.</p></div>
@@ -339,7 +360,7 @@
       </section>
 
       <section class="ch" id="c7"><header><span class="chno">7</span><h2>분석 과정의 판단</h2></header>
-        <p class="lead">정답이 없는 선택을 할 때마다 이유와, 다르게 했다면 어땠을지를 적어 두었다. 항목을 누르면 펼쳐진다.</p>
+        <p class="lead">정답이 없는 선택을 할 때마다 이유와 다르게 했다면 어땠을지를 적었다. 항목을 누르면 펼쳐진다.</p>
         <div class="dec">${decisions.map((d, i) => `<details${i === 0 ? ' open' : ''}><summary><span class="dn">${String(i + 1).padStart(2, '0')}</span><span class="dq">${d[0]}</span><span class="da">${d[1]}</span></summary><div class="db"><p><b>이유</b>${d[2]}</p><p><b>다르게 했다면</b>${d[3]}</p></div></details>`).join('')}</div>
       </section>
       </div>
@@ -355,6 +376,7 @@
     new IntersectionObserver(es => es.forEach(en => rail.classList.toggle('show', en.isIntersecting || en.boundingClientRect.top < 0)), { rootMargin: '0px 0px -60% 0px' }).observe(document.querySelector('.chapters'));
     const fn = $('funnel'); document.querySelector('.more-box').addEventListener('toggle', () => fn.classList.add('drawn'));
     document.querySelectorAll('.exbars').forEach(el => L.onView(el, () => el.classList.add('drawn')));
+    reveal();
   }
   L.tabs.report = { build, built: false };
 })();
