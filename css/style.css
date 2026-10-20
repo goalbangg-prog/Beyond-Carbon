@@ -604,6 +604,25 @@ input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 
 .fl-list b { color: var(--forest); margin-right: 6px; }
 .flag .tbl tr.chk td { background: var(--amber-soft); }
 .flag .tbl tr.chk td:first-child { box-shadow: inset 3px 0 0 var(--amber); }
+
+/* 5장 예 1: 무게 비중 vs 물발자국 비중 */
+.wvi { margin-top: 14px; background: var(--forest); border-radius: var(--r-m); padding: 18px 18px 14px; color: #DCE9D8; }
+.wvi-row { display: grid; grid-template-columns: 112px 1fr 76px; gap: 12px; align-items: center; margin-bottom: 12px; }
+.wvi-l { font-size: 12.5px; line-height: 1.35; color: #C5D8C9; }
+.wvi-t { position: relative; height: 26px; border-radius: 6px; background: rgba(255, 255, 255, .08); overflow: hidden; }
+.wvi-t i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 6px; background: var(--sage); transition: width 1.4s cubic-bezier(.2, .8, .2, 1); }
+.wvi-row.hi .wvi-t i { background: linear-gradient(90deg, #F0524B, var(--amber)); box-shadow: 0 0 18px rgba(240, 82, 75, .45); }
+.wvi-row:not(.hi) .wvi-t i { background: var(--lime); box-shadow: 0 0 10px rgba(198, 224, 90, .8); }
+.wvi-row b { font-size: 18px; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; color: var(--lime); }
+.wvi-row.hi b { font-size: 26px; color: #FF7A63; letter-spacing: -0.02em; }
+.ex .wvi-cap { margin: 4px 0 0; font-size: 14.5px; color: #DCE9D8; }
+.wvi-cap b { color: var(--lime); }
+.wvi-cap b.big { color: #FF7A63; font-size: 17px; }
+.wvi.pulse .wvi-row.hi .wvi-t i { animation: barGlow 1.2s ease 1.2s 1; }
+.wvi.pulse .wvi-row.hi b { animation: numPop .6s cubic-bezier(.34, 1.56, .64, 1) 1.3s 1; }
+@keyframes barGlow { 0% { box-shadow: 0 0 18px rgba(240, 82, 75, .45); } 50% { box-shadow: 0 0 34px rgba(240, 82, 75, .9); } 100% { box-shadow: 0 0 18px rgba(240, 82, 75, .45); } }
+@keyframes numPop { 0% { transform: scale(1); } 50% { transform: scale(1.18); } 100% { transform: scale(1); } }
+.wvi-row b { display: inline-block; transform-origin: right center; }
 @media (prefers-reduced-motion: reduce) {
   .rv, .impacts > div, .claim, .cview .cv-t, .hero .kicker, .hero h1 .ln, .hero .lead, .hero .scope, .hero-fig, .sum > div, .hero .cue, .hero-cmp .cmp tbody tr, .flag .cmp tbody tr, .flag .tbl tbody tr, .flag .shift-call, .formula .f-t { opacity: 1 !important; transform: none !important; }
   .flag .rank, .ch > header .chno, .flag .cmp .eq, .hero-cmp .cmp .eq { transform: none !important; }

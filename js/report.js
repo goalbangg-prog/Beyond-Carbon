@@ -141,20 +141,29 @@
     L.onView(box, () => setTimeout(() => { if (auto) set('all'); }, L.reduce ? 0 : 1800));
   }
 
-  /* ---------- 예 1: 전선 무게 바꾸기 ---------- */
+  /* ---------- 예 1: 전선 무게 바꾸기 (무게 비중 vs 물발자국 비중) ---------- */
   function wireSlider() {
-    const s = $('wireG'); if (!s || !W1) return;
+    const s = $('wireG'), box = $('wvi'); if (!s || !W1) return;
+    let shown = false, firstDone = false;
+    const pf = v => (v < 1 ? v.toFixed(2) : v.toFixed(1)) + '%';
     const draw = () => {
       const g = +s.value / 1000, rest = 2 - g, rw = rest * W1.med;
-      const A = g * W1.wire + rw, B = g * W1.pvc + rw, share = g * W1.wire / A * 100, ratio = A / B;
+      const A = g * W1.wire + rw, B = g * W1.pvc + rw, share = g * W1.wire / A * 100, wshare = g / 2 * 100, ratio = A / B;
       $('wireGv').textContent = s.value; s.style.setProperty('--p', ((s.value - 1) / 99 * 100) + '%');
       $('ex1A').style.setProperty('--w', '100%'); $('ex1B').style.setProperty('--w', Math.max(0.4, B / A * 100) + '%');
       $('ex1At').textContent = vol(A); $('ex1Bt').textContent = vol(B);
-      $('ex1S').style.width = share + '%'; $('ex1St').textContent = share.toFixed(1) + '%';
       const r = ratio >= 100 ? (Math.round(ratio / 10) * 10).toLocaleString('ko-KR') : Math.round(ratio).toLocaleString('ko-KR');
       $('ex1R').innerHTML = `전선 ${s.value}g의 계수 선택만으로 제품 물발자국이 <b>약 ${r}배</b> 달라져요.`;
+      if (!shown) return;
+      $('wvW').style.width = Math.max(1.2, wshare) + '%'; $('wvI').style.width = share + '%';
+      const put = (id, v) => { const el = $(id); if (!firstDone && !L.reduce) { const t0 = performance.now(), d = 1400; const st = t => { const p = Math.min(1, (t - t0) / d), e = 1 - Math.pow(1 - p, 3); el.textContent = pf(v * e); if (p < 1) requestAnimationFrame(st); }; requestAnimationFrame(st); } else el.textContent = pf(v); };
+      put('wvWt', wshare); put('wvIt', share);
+      $('wvCap').innerHTML = `전선은 제품 무게의 <b>${pf(wshare)}</b>뿐인데, 물발자국의 <b class="big">${pf(share)}</b>를 차지해요.`;
+      firstDone = true;
+      box.classList.remove('pulse'); void box.offsetWidth; box.classList.add('pulse');
     };
     s.addEventListener('input', draw); draw();
+    L.onView(box, () => { shown = true; box.classList.add('go'); setTimeout(draw, L.reduce ? 0 : 250); });
   }
 
   /* ---------- 계산 예시의 막대 ---------- */
@@ -180,7 +189,7 @@
     const unitN = new Set(D.filter(r => r.stage === '원료 및 에너지 생산').map(r => r.unit)).size;
 
     // 산정 예시 1: 원료 2kg 중 전선 20g인 가상의 소형 가전 / 예시 2: 잔골재 800kg
-    const ex1Share = 0.02 * wire.value / (0.02 * wire.value + 1.98 * wMed) * 100;
+    const ex1Share = 0.001 * wire.value / (0.001 * wire.value + 1.999 * wMed) * 100;
     const kgAgg = 800, ex2S = kgAgg * sand.value, ex2F = kgAgg * fineAgg;
 
     const IMPACTS = [
@@ -229,9 +238,9 @@
         </figure>
       </div>
       <dl class="sum">
-        <div><dt>값이 일치하는 원료</dt><dd>납·염소는 5개 범주가 모두 같고, 파티클보드·우드칩은 같은 값이 서로 다른 열에 들어가 있어요.</dd></div>
-        <div><dt>자릿수 이상</dt><dd>기기선의 물발자국은 1kg당 ${Math.round(wire.value)}m³로, PVC 전선의 약 ${wireX}만 배예요.</dd></div>
-        <div><dt>산정 결과에 미치는 영향</dt><dd>원료 2kg인 가전에 기기선 20g만 들어가도 제품 물발자국의 ${ex1Share.toFixed(1)}%가 이 계수에서 나와요.</dd></div>
+        <div><dt>값이 일치하는 원료</dt><dd>납·염소는 5개 범주가 모두 같고, 파티클보드·우드칩은<br>같은 값이 서로 다른 열에 들어가 있어요.</dd></div>
+        <div><dt>자릿수 이상</dt><dd>기기선의 물발자국은 1kg당 ${Math.round(wire.value)}m³로,<br>PVC 전선의 약 ${wireX}만 배예요.</dd></div>
+        <div><dt>산정 결과에 미치는 영향</dt><dd>원료 2kg인 가전에 기기선 1g만 들어가도<br>제품 물발자국의 ${ex1Share.toFixed(1)}%가 이 계수에서 나와요.</dd></div>
       </dl>
       <a class="cue" href="#c1" data-go="c1">분석 과정 보기</a>
     </section>
@@ -313,10 +322,14 @@
         <p class="lead">위 계수를 그대로 쓰면 제품 산정 결과가 얼마나 달라지는지 가상의 제품 두 개로 계산했어요. 투입량은 설명을 위한 가정이에요.</p>
         <div class="examples">
           <article class="ex"><h3>예 1. 전선이 들어간 2kg 가전</h3>
-            <p>전선 외 원료는 물발자국 중앙값(1kg당 ${L.fmt(wMed)}m³)을 적용했어요. <b>막대로 전선 투입량을 바꿔 볼 수 있어요.</b></p>
-            <div class="wslider"><label for="wireG">전선 투입량</label><input type="range" id="wireG" min="1" max="100" step="1" value="20"><output><b id="wireGv">20</b>g</output></div>
+            <p>전선 외 원료는 물발자국 중앙값(1kg당 ${L.fmt(wMed)}m³)을 적용했어요.</p>
+            <div class="wvi" id="wvi">
+              <div class="wvi-row"><span class="wvi-l">제품 무게 중<br>전선 비중</span><div class="wvi-t"><i id="wvW"></i></div><b id="wvWt">0%</b></div>
+              <div class="wvi-row hi"><span class="wvi-l">제품 물발자국 중<br>전선 비중</span><div class="wvi-t"><i id="wvI"></i></div><b id="wvIt">0%</b></div>
+              <p class="wvi-cap" id="wvCap"></p>
+            </div>
+            <div class="wslider"><label for="wireG">전선 투입량</label><input type="range" id="wireG" min="1" max="100" step="1" value="1"><output><b id="wireGv">1</b>g</output></div>
             <div class="exbars" id="ex1Bars"><div class="exb hi"><span>기기선 계수 적용</span><div class="exb-t"><i id="ex1A"></i></div><b id="ex1At"></b></div><div class="exb"><span>PVC 전선 계수 적용</span><div class="exb-t"><i id="ex1B"></i></div><b id="ex1Bt"></b></div></div>
-            <div class="share"><div class="share-t"><i id="ex1S"></i></div><span>기기선 계수 적용 시 전선의 기여율 <b id="ex1St"></b></span></div>
             <p class="ex-r" id="ex1R"></p></article>
           <article class="ex"><h3>예 2. 콘크리트 잔골재 ${kgAgg}kg</h3>
             <p>천연 모래와 순환 골재의 물발자국을 비교하는 상황이에요.</p>
@@ -346,7 +359,7 @@
             <div><dt>확인 방법</dt><dd>부트스트랩 2,000회(ρ ${CI('물').lo.toFixed(2)}~${CI('물').hi.toFixed(2)}), 기초화학물질 제외(${nb.rho.toFixed(2)}), 6건 제외(${rs.strong['물소모'].rho.toFixed(2)})에서도 결론 동일</dd></div>
             <div><dt>신뢰 수준</dt><dd><span class="lv hi">높음</span> 원료 1kg당 계수에 한해서예요. 제품 단위는 아래 표를 보세요.</dd></div></dl></article>
           <article class="claim"><span class="cl-no">주장 3</span><h3>그대로 쓰면 산정 결과가 크게 바뀔 수 있어요</h3>
-            <dl><div><dt>근거</dt><dd>가상 제품 계산에서 약 1,800배(전선), 약 1,400배(잔골재) 차이</dd></div>
+            <dl><div><dt>근거</dt><dd>가상 가전에서 무게의 0.05%인 전선 1g이 물발자국의 ${ex1Share.toFixed(1)}%를 차지하고, 잔골재 예시에서는 약 1,400배 차이</dd></div>
             <div><dt>확인 방법</dt><dd>전선 투입량을 1~100g으로 바꿔도 결과 대부분이 전선 계수에서 발생</dd></div>
             <div><dt>신뢰 수준</dt><dd><span class="lv mid">중간</span> 계산은 확실하지만 투입량이 가정이라, 실제 차이는 제품마다 달라요.</dd></div></dl></article>
         </div>

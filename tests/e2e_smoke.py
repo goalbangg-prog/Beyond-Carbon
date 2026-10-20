@@ -22,8 +22,11 @@ async def main():
         assert await pg.inner_text("#cvN") == "2", "탄소발자국 칸만: 2건"
         await pg.click('[data-cv="all"]'); await pg.wait_for_timeout(800)
         assert await pg.inner_text("#cvN") == "6", "모든 범주: 6건"
-        await pg.fill("#wireG", "1"); await pg.dispatch_event("#wireG", "input"); await pg.wait_for_timeout(200)
-        assert "98.9%" == await pg.inner_text("#ex1St"), await pg.inner_text("#ex1St")
+        await pg.evaluate("document.getElementById('wvi').scrollIntoView()"); await pg.wait_for_timeout(2200)
+        assert "98.9%" == await pg.inner_text("#wvIt"), await pg.inner_text("#wvIt")
+        assert "0.05%" == await pg.inner_text("#wvWt"), await pg.inner_text("#wvWt")
+        await pg.fill("#wireG", "20"); await pg.dispatch_event("#wireG", "input"); await pg.wait_for_timeout(200)
+        assert "99.9%" == await pg.inner_text("#wvIt"), await pg.inner_text("#wvIt")
         for t in ["notes", "report"]:
             await pg.click(f'[data-tab="{t}"]'); await pg.wait_for_timeout(500)
         assert not errs, errs
