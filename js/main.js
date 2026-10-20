@@ -17,4 +17,16 @@
   const bar = L.$('progress');
   window.addEventListener('scroll', () => { const h = document.documentElement, p = h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight); bar.style.transform = `scaleX(${p})`; }, { passive: true });
   show(location.hash.slice(1));
+
+  // PDF 저장: 두 탭을 모두 펼치고 애니메이션을 완성된 상태로 맞춘 뒤 인쇄 창을 연다
+  const toast = L.$('toast'), title = document.title, reduce0 = L.reduce;
+  L.$('pdfBtn').addEventListener('click', () => {
+    names.forEach(n => { const t = L.tabs[n]; if (!t.built) { t.build(); t.built = true; } });
+    document.body.classList.add('print-all');
+    L.tabs.report.beforePrint();
+    toast.textContent = '인쇄 창에서 ‘대상: PDF로 저장’을 선택하세요'; toast.hidden = false;
+    document.title = 'EPD 데이터 분석_평가계수 398건 점검_김수현';
+    setTimeout(() => window.print(), 500);
+  });
+  window.addEventListener('afterprint', () => { document.body.classList.remove('print-all'); document.title = title; toast.hidden = true; L.reduce = reduce0; });
 })();

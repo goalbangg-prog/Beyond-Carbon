@@ -528,3 +528,62 @@ input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 
   .flag .rank, .ch > header .chno, .flag .cmp .eq, .hero-cmp .cmp .eq { transform: none !important; }
   .hero::before, .hero::after { animation: none; }
 }
+
+/* ===== 상단 PDF 저장 버튼, 안내 ===== */
+.top-act { display: flex; align-items: center; gap: 8px; }
+.pdf { font: 600 14px var(--sans); color: #fff; background: var(--forest); border: 1px solid var(--forest); padding: 7px 14px; border-radius: 999px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background .2s; }
+.pdf::before { content: ""; width: 12px; height: 12px; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3v12m0 0-5-5m5 5 5-5M4 21h16' stroke='black' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3v12m0 0-5-5m5 5 5-5M4 21h16' stroke='black' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat; }
+.pdf:hover { background: var(--green); border-color: var(--green); }
+.toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 50; background: var(--forest); color: #fff; font-size: 14px; padding: 12px 18px; border-radius: 999px; box-shadow: 0 8px 24px rgba(15, 59, 42, .25); }
+.toast[hidden] { display: none; }
+
+/* ===== PDF 저장 (인쇄) ===== */
+@page { size: A4; margin: 12mm 10mm; }
+@media print {
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; transition: none !important; animation: none !important; }
+  html, body { background: #fff; min-width: 0 !important; }
+  .top, .progress, .rail, .cue, .toast, .seg, .seg2, .slens, .wslider, .cv-badge.miss, .hero::before, .hero::after { display: none !important; }
+  body.print-all .pane.hidden { display: block !important; }
+  #notes { break-before: page; padding: 0; }
+  .notes { max-width: none; }
+  .wrap { padding: 0; }
+
+  /* 등장 효과는 모두 완성된 상태로 */
+  .rv, .impacts > div, .claim, .cview .cv-t, .hero .kicker, .hero h1 .ln, .hero .lead, .hero .scope, .hero-fig, .sum > div,
+  .hero-cmp .cmp tbody tr, .flag .cmp tbody tr, .flag .tbl tbody tr, .flag .shift-call, .step, .meter, .flag .rank, .ch > header .chno, .flag .cmp .eq, .hero-cmp .cmp .eq { opacity: 1 !important; transform: none !important; filter: none !important; }
+
+  /* 첫 화면 */
+  .hero { padding: 26px 0 20px; border-radius: 10px; }
+  .hero-in { grid-template-columns: 1fr; gap: 20px; padding: 0 24px; }
+  .hero h1 { font-size: 30px; }
+  .hero .lead { font-size: 13.5px; max-width: none; }
+  .hero-fig { max-width: 560px; }
+  .sum { margin-top: 18px; padding: 16px 24px 0; gap: 18px; }
+  .sum dd { font-size: 12.5px; }
+  .sum dd br { display: none; }
+
+  /* 본문 배치: 좁은 A4 폭에 맞춘다 */
+  .doc { display: block; padding: 0; max-width: none; }
+  .ch { padding: 22px 0 10px; }
+  .ch > header { break-after: avoid; }
+  .lead { font-size: 13.5px; max-width: none; }
+  .impacts { grid-template-columns: repeat(4, 1fr); }
+  .data-grid.two-col, .examples, .claims, .two, .flag-two { grid-template-columns: 1fr; }
+  .methods { grid-template-columns: repeat(2, 1fr); }
+  .cv-grid { grid-template-columns: repeat(2, 1fr); }
+  .flag > div[id], .shift-call { margin-left: 0; }
+
+  /* 스크롤 그래프: 물발자국 장면 한 장과 그 설명만 */
+  .story { grid-template-columns: 1fr; gap: 12px; }
+  .st-sticky { position: static; }
+  .st-steps { padding: 0; }
+  .step { display: none; margin: 0; }
+  .step[data-step="4"] { display: block; }
+  .plotcard { max-width: 560px; margin: 0 auto; }
+
+  /* 페이지 경계에서 잘리지 않게 */
+  .flag, .ex, .claim, .cview, .cv-t, .facts > div, .impacts > div, .methods li, .checklist, .wvi, .plotcard, .meter, .hero-fig, .dec details, .ck, .tbl tr, .cmp tr, table.cant tr { break-inside: avoid; }
+  .db { animation: none; }
+  a { color: inherit; text-decoration: none; }
+  .foot p { padding: 14px 0 0; }
+}

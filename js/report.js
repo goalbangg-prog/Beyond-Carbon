@@ -7,7 +7,7 @@
   /* ---------- 순위 비교 그래프 (스크롤에 따라 단계별로 바뀜) ---------- */
   const SW = 600, SH = 560, m = { l: 54, r: 16, t: 20, b: 50 }, iw = SW - m.l - m.r, ih = SH - m.t - m.b;
   const X = p => m.l + p / 100 * iw, Y = p => m.t + ih - p / 100 * ih;
-  let lens = '물', step = 0;
+  let lens = '물', step = 0, storyShow = null;
   function story() {
     const grid = [0, 20, 40, 60, 80, 100];
     $('stPlot').innerHTML = `<svg viewBox="0 0 ${SW} ${SH}" role="img" aria-labelledby="stT"><title id="stT">원료별 탄소발자국 순위와 물발자국 순위</title>
@@ -62,6 +62,7 @@
     cards.forEach(c => io.observe(c));
     document.querySelectorAll('[data-slens]').forEach(b => b.addEventListener('click', () => { lens = b.dataset.slens; step = 6; draw(); }));
     step = 0; draw();
+    storyShow = (st, ln) => { step = st; lens = ln; draw(); };
   }
 
 
@@ -398,5 +399,17 @@
     document.querySelectorAll('.impacts > div').forEach((el, i) => el.style.setProperty('--d', i * 70 + 'ms'));
     reveal(); carbonView(); wireSlider();
   }
-  L.tabs.report = { build, built: false };
+  /* ---------- PDF 저장: 모든 장면을 완성된 상태로 맞춘다 ---------- */
+  function beforePrint() {
+    L.reduce = true; // 인쇄가 끝날 때까지 애니메이션 없이 최종 값으로
+    document.querySelector('.hero').classList.add('go');
+    document.querySelectorAll('#report .rv').forEach(el => el.classList.add('in'));
+    document.querySelectorAll('#report [data-n]').forEach(el => (el.textContent = el.dataset.n));
+    document.querySelectorAll('#report .exbars').forEach(el => el.classList.add('drawn'));
+    document.querySelectorAll('details').forEach(d => (d.open = true));
+    const cv = document.querySelector('[data-cv="all"]'); if (cv) cv.click();
+    const wv = document.querySelector('[data-wv="i"]'); if (wv) wv.click();
+    if (storyShow) storyShow(4, '물');
+  }
+  L.tabs.report = { build, built: false, beforePrint };
 })();
