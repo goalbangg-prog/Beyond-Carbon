@@ -221,4 +221,4 @@ docs/  CHANGELOG.md  TEST_REPORT.md  img/
 
 ---
 
-<p align="center">분석·작성: <b>김수현</b> · <a href="https://goalbangg-prog.github.io/Portfoilo-V4/">포트폴리오</a></p>
+<p align="center">만든 사람 : 김수현 · <a href="https://goalbangg-prog.github.io/Portfoilo-V4/">포트폴리오</a></p>
