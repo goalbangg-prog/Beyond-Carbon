@@ -12,7 +12,5 @@
   };
   S.pearson = (x, y) => { const mx = S.mean(x), my = S.mean(y); let sxy = 0, sxx = 0, syy = 0; for (let i = 0; i < x.length; i++) { sxy += (x[i] - mx) * (y[i] - my); sxx += (x[i] - mx) ** 2; syy += (y[i] - my) ** 2; } return sxx && syy ? sxy / Math.sqrt(sxx * syy) : NaN; };
   S.spearman = (x, y) => S.pearson(S.rank(x), S.rank(y));
-  // 값 v 가 기준 집합 ref 에서 차지하는 위치 (0~100)
-  S.percentile = (ref, v) => { let below = 0, eq = 0; for (const x of ref) { if (x < v) below++; else if (x === v) eq++; } return (below + eq / 2) / ref.length * 100; };
   g.S = S;
 })(window);

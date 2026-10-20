@@ -60,7 +60,7 @@
         <div class="dec">${DEC.map((d, i) => `<details><summary><span class="dn">${String(i + 1).padStart(2, '0')}</span><span class="dq">${d[0]}</span><span class="da">${d[1]}</span></summary><div class="db"><p><b>이유</b>${d[2]}</p><p><b>다르게 했다면</b>${d[3]}</p></div></details>`).join('')}</div></section>
 
       <section class="nb"><h2>다시 계산하는 방법</h2>
-        <p>모든 값은 원자료에서 Python(pandas, NumPy, SciPy)으로 다시 계산돼요. 웹 화면의 계산이 Python 결과와 같은지는 자동 테스트(46개 항목)로 확인했어요.</p>
+        <p>모든 값은 원자료에서 Python(pandas, NumPy, SciPy)으로 다시 계산돼요. 웹 화면의 계산이 Python 결과와 같은지는 자동 테스트(39개 항목)로 확인했어요.</p>
         <pre><code>pip install -r requirements.txt
 python analysis/reanalysis.py   # data/analysis_results.json, js/results.js 생성
 node tests/stats.test.js        # 웹 계산과 Python 결과 비교</code></pre>

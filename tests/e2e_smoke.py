@@ -1,14 +1,12 @@
 """브라우저 스모크 테스트 (Playwright). 실행: python tests/e2e_smoke.py
-Plotly는 기록용 스텁으로 바꿔, 차트 모양이 아니라 화면 동작과 데이터 흐름을 검증한다."""
+첫 화면, 확인이 필요한 계수 6건, 범주 보기 전환, 산정 예시, 스크롤 그래프, 탭 전환이 오류 없이 동작하는지 확인한다."""
 import asyncio, os
 from playwright.async_api import async_playwright
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-STUB = """window.Plotly={newPlot:(e)=>{e.classList.add('js-plotly-plot');e.innerHTML='<div>[차트]</div>'},purge(e){e.classList.remove('js-plotly-plot')},Plots:{resize(){}}};"""
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(args=["--no-sandbox"]); pg = await b.new_page(viewport={"width": 1440, "height": 900}); errs = []
         pg.on("pageerror", lambda e: errs.append(str(e)))
-        await pg.route("**/plotly*.js", lambda r: r.fulfill(body=STUB, content_type="application/javascript"))
         await pg.goto("file://" + BASE + "/index.html"); await pg.wait_for_timeout(1500)
         assert await pg.evaluate("document.querySelectorAll('.hero-cmp tr.same').length") == 5, "첫 화면: 납·염소 같은 값 5개"
         assert await pg.evaluate("document.querySelectorAll('.flag').length") == 6, "다시 확인할 값 6건"

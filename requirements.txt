@@ -1,6 +1,5 @@
 pandas
 numpy
 scipy
-scikit-learn
-matplotlib
 jupyter
+playwright  # tests/e2e_smoke.py

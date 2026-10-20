@@ -1,9 +1,8 @@
-/* 분석 리포트 탭. 수치는 데이터에서 직접 계산하거나 analysis_results.json(Python 결과)에서 가져온다. 본문은 ‘~요’체. */
+/* 분석 리포트 탭. 수치는 원자료(js/data.js)에서 직접 계산하거나 Python 결과(js/results.js)에서 가져온다. */
 (function () {
   const { $, esc, POOL, D, RES, NAME, RKEY } = L;
   const LENSES = ['물', '부영', '스모그', '자원', '산성'];
   const CI = k => RES.carbon_rho_ci[RKEY[k]], CAP = k => RES.screening_capture[RKEY[k]];
-  const CUT = k => RES.cutoff_curve[RKEY[k]], cutAt = (k, q) => CUT(k).find(r => r.q === q);
 
   /* ---------- 순위 비교 그래프 (스크롤에 따라 단계별로 바뀜) ---------- */
   const SW = 600, SH = 560, m = { l: 54, r: 16, t: 20, b: 50 }, iw = SW - m.l - m.r, ih = SH - m.t - m.b;
@@ -18,7 +17,6 @@
       <rect id="zO" class="zone zo" x="${X(0)}" width="${iw}"/>
       <line class="diag" x1="${X(0)}" y1="${Y(0)}" x2="${X(100)}" y2="${Y(100)}"/>
       <g id="sdots">${POOL.map(r => `<circle r="5.4" data-id="${r.id}" class="na"/>`).join('')}</g>
-      <g id="ann" class="ann"></g>
       <text class="ax" x="${X(50)}" y="${SH - 8}" text-anchor="middle">탄소발자국 순위 (오른쪽일수록 큼)</text>
       <text class="ax" id="stAxY" transform="translate(15,${Y(50)}) rotate(-90)" text-anchor="middle"></text>
     </svg><div class="tip" id="tip" hidden></div>`;
@@ -32,7 +30,6 @@
       });
       c.addEventListener('mouseleave', () => (tip.hidden = true));
     });
-    const cardboard = POOL.find(r => r.name === '골판지');
     const draw = () => {
       const pp = L.PP[lens], t = L.top20(lens), cap = CAP(lens);
       const svg = $('stPlot').querySelector('svg'); svg.dataset.step = step;
@@ -48,17 +45,9 @@
         const y = step === 0 ? p.c : p.o;
         c.style.transform = `translate(${X(p.c)}px,${Y(y)}px)`;
         c.style.transitionDelay = step <= 1 && !L.reduce ? (p.c / 100 * .5).toFixed(2) + 's' : '0s';
-        let cls = 'on';
-        if (step === 2) cls = t.tc.has(id) ? 'pick' : 'dim';
-        else if (step === 3) cls = t.to.has(id) ? 'top' : t.tc.has(id) ? 'pick' : 'dim';
-        else if (step >= 4) cls = both.has(id) ? 'got' : miss.has(id) ? 'miss' : 'dim';
-        if (step === 5) cls = id === cardboard.id ? 'focus' : (miss.has(id) ? 'miss faint' : 'dim');
-        c.setAttribute('class', cls);
+        c.setAttribute('class', step >= 4 ? (both.has(id) ? 'got' : miss.has(id) ? 'miss' : 'dim') : 'on');
       });
-      let ann = '';
-      if (step === 5 && pp[cardboard.id]) { const p = pp[cardboard.id], x = X(p.c), y = Y(p.o); ann = `<circle class="ring" cx="${x}" cy="${y}" r="15"/><line x1="${x + 15}" y1="${y + 6}" x2="${x + 70}" y2="${y + 60}"/><text x="${x + 74}" y="${y + 66}">골판지</text><text class="s" x="${x + 74}" y="${y + 84}">탄소발자국 ${L.topLabel(p.c)} · 물발자국 ${L.topLabel(p.o)}</text>`; }
-      $('ann').innerHTML = ann;
-      $('stMeter').classList.toggle('show', step >= 3);
+      $('stMeter').classList.toggle('show', step >= 4);
       $('stMeter').innerHTML = `<span class="mt-l">${NAME[lens]} 상위 20% 원료</span><b>${cap['다른영향상위']}종</b>
         <span class="mt-got"><i></i>탄소발자국도 상위 <b>${cap['함께상위']}종</b></span><span class="mt-miss"><i></i>탄소발자국은 하위권 <b>${cap['빠진']}종</b></span>`;
       document.querySelectorAll('[data-slens]').forEach(b => b.setAttribute('aria-pressed', b.dataset.slens === lens));
@@ -106,7 +95,7 @@
 
   /* ---------- 스크롤 등장 효과 ---------- */
   function reveal() {
-    const SEL = '.ch > header, .ch > .lead, .impacts, .facts > div, .claim, .cant, .ch > .hint, .ch > .note, .ch > .sub, .ch > .sub-lead, .ch > .concl, .cview, .methods li, .flag, .ex, .checklist, .checklist li, .ck, .yesno > div, .dec details, .formula, .data-grid > *, .story';
+    const SEL = '.ch > header, .ch > .lead, .impacts, .facts > div, .claim, .cant, .ch > .note, .ch > .sub, .ch > .sub-lead, .cview, .methods li, .flag, .ex, .checklist, .checklist li, .ck, .dec details, .data-grid > *, .story';
     const els = [...document.querySelectorAll('#report ' + SEL)];
     const groups = new Map();
     els.forEach(el => { el.classList.add('rv'); const k = el.parentElement; groups.set(k, (groups.get(k) || 0) + 1); el.style.setProperty('--d', ((groups.get(k) - 1) % 6) * 90 + 'ms'); });
@@ -290,7 +279,7 @@
       </section>
 
       <section class="ch" id="c3"><header><span class="chno">3</span><h2>확인이 필요한 계수 6건</h2></header>
-        <p class="lead">입력 오류 가능성과 산정 결과에 미치는 영향이 큰 순서예요.<br><b>1~3번은 입력 오류의 흔적이 뚜렷하고</b>, 4~6번은 다른 설명의 여지도 있어요.</p>
+        <p class="lead">입력 오류 가능성과 산정 결과에 미치는 영향이 큰 순서예요.<br><b>1~3번은 입력 실수로 보이고</b>, 4~6번은 그럴 만한 이유가 있을 수도 있어요.</p>
 
         <article class="flag f1"><header><span class="rank">1</span><div><h3>납과 염소: 5개 범주 값이 모두 일치</h3><p>금속과 기체로 생산 공정이 전혀 다른데, <b>값이 있는 5개 범주가 유효숫자 아홉 자리까지 같아요.</b> ${D.length}건 중 유일한 사례예요. <em class="warn">한쪽 값이 다른 쪽에 복사됐을 가능성이 커요.</em></p></div></header>
           <div id="pairLead"></div></article>
