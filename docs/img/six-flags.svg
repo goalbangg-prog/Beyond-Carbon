@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" width="1200" height="520" font-family="Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif">
+  <rect width="1200" height="520" rx="18" fill="#0F3B2A"/>
+  <text x="40" y="54" fill="#FFFFFF" font-size="24" font-weight="800">확인이 필요한 계수 6건은 어느 영향범주에 있을까</text>
+  <g font-size="14" fill="#C5D8C9">
+    <rect x="40" y="76" width="18" height="18" rx="4" fill="#F0524B" fill-opacity=".22" stroke="#F0524B" stroke-width="2"/><text x="49" y="90" text-anchor="middle" fill="#F0524B" font-weight="800">=</text><text x="66" y="90">다른 원료와 값 일치</text>
+    <rect x="230" y="76" width="18" height="18" rx="4" fill="#F0524B"/><text x="239" y="90" text-anchor="middle" fill="#FFFFFF" font-weight="800">!</text><text x="256" y="90">자릿수 이상·열 밀림</text>
+    <rect x="430" y="76" width="18" height="18" rx="4" fill="#FFFFFF" fill-opacity=".08"/><text x="456" y="90">이상 없음 또는 빈칸</text>
+  </g>
+
+  <!-- 열 머리 -->
+  <g font-size="14" fill="#C5D8C9" text-anchor="middle">
+    <text x="535" y="138" fill="#FFFFFF" font-weight="800">탄소발자국</text><text x="635" y="138">자원발자국</text><text x="735" y="138">산성비</text><text x="835" y="138">부영양화</text><text x="935" y="138">물발자국</text><text x="1035" y="138">광화학스모그</text><text x="1135" y="138">오존층영향</text>
+  </g>
+  <rect x="490" y="118" width="90" height="372" rx="10" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="6 5" stroke-opacity=".7"/>
+
+  <!-- 행: 1 납·염소 -->
+  <g font-size="16">
+    <g transform="translate(0,152)"><circle cx="58" cy="28" r="15" fill="#F0524B"/><text x="58" y="33" text-anchor="middle" fill="#fff" font-weight="800" font-size="14">1</text><text x="86" y="25" fill="#fff" font-weight="700">납·염소</text><text x="86" y="45" fill="#9FB9A6" font-size="13">5개 범주 값 일치</text></g>
+    <g transform="translate(0,208)"><circle cx="58" cy="28" r="15" fill="#F0524B"/><text x="58" y="33" text-anchor="middle" fill="#fff" font-weight="800" font-size="14">2</text><text x="86" y="25" fill="#fff" font-weight="700">기기선</text><text x="86" y="45" fill="#9FB9A6" font-size="13">물발자국이 PVC 전선의 약 142만 배</text></g>
+    <g transform="translate(0,264)"><circle cx="58" cy="28" r="15" fill="#F0524B"/><text x="58" y="33" text-anchor="middle" fill="#fff" font-weight="800" font-size="14">3</text><text x="86" y="25" fill="#fff" font-weight="700">파티클보드·우드칩</text><text x="86" y="45" fill="#9FB9A6" font-size="13">오존층영향 ↔ 산성비 열 밀림</text></g>
+    <g transform="translate(0,320)"><circle cx="58" cy="28" r="15" fill="#F0524B"/><text x="58" y="33" text-anchor="middle" fill="#fff" font-weight="800" font-size="14">4</text><text x="86" y="25" fill="#fff" font-weight="700">스테인리스강·탄소강, 저항 4종</text><text x="86" y="45" fill="#9FB9A6" font-size="13">물발자국 값 일치</text></g>
+    <g transform="translate(0,376)"><circle cx="58" cy="28" r="15" fill="#F0524B"/><text x="58" y="33" text-anchor="middle" fill="#fff" font-weight="800" font-size="14">5</text><text x="86" y="25" fill="#fff" font-weight="700">오존층영향이 큰 원료</text><text x="86" y="45" fill="#9FB9A6" font-size="13">옵셋잉크 등 1kg당 0.001 이상</text></g>
+    <g transform="translate(0,432)"><circle cx="58" cy="28" r="15" fill="#F0524B"/><text x="58" y="33" text-anchor="middle" fill="#fff" font-weight="800" font-size="14">6</text><text x="86" y="25" fill="#fff" font-weight="700">하천모래</text><text x="86" y="45" fill="#9FB9A6" font-size="13">물발자국이 순환 잔골재의 약 1,400분의 1</text></g>
+  </g>
+
+  <!-- 칸: x = 500 + 100*col, y = 156 + 56*row -->
+  <g>
+    <!-- 빈칸 바탕 -->
+    <g fill="#FFFFFF" fill-opacity=".07">
+      <rect x="500" y="156" width="70" height="44" rx="6"/><rect x="600" y="156" width="70" height="44" rx="6"/><rect x="700" y="156" width="70" height="44" rx="6"/><rect x="800" y="156" width="70" height="44" rx="6"/><rect x="900" y="156" width="70" height="44" rx="6"/><rect x="1000" y="156" width="70" height="44" rx="6"/><rect x="1100" y="156" width="70" height="44" rx="6"/>
+      <rect x="500" y="212" width="70" height="44" rx="6"/><rect x="600" y="212" width="70" height="44" rx="6"/><rect x="700" y="212" width="70" height="44" rx="6"/><rect x="800" y="212" width="70" height="44" rx="6"/><rect x="900" y="212" width="70" height="44" rx="6"/><rect x="1000" y="212" width="70" height="44" rx="6"/><rect x="1100" y="212" width="70" height="44" rx="6"/>
+      <rect x="500" y="268" width="70" height="44" rx="6"/><rect x="600" y="268" width="70" height="44" rx="6"/><rect x="700" y="268" width="70" height="44" rx="6"/><rect x="800" y="268" width="70" height="44" rx="6"/><rect x="900" y="268" width="70" height="44" rx="6"/><rect x="1000" y="268" width="70" height="44" rx="6"/><rect x="1100" y="268" width="70" height="44" rx="6"/>
+      <rect x="500" y="324" width="70" height="44" rx="6"/><rect x="600" y="324" width="70" height="44" rx="6"/><rect x="700" y="324" width="70" height="44" rx="6"/><rect x="800" y="324" width="70" height="44" rx="6"/><rect x="900" y="324" width="70" height="44" rx="6"/><rect x="1000" y="324" width="70" height="44" rx="6"/><rect x="1100" y="324" width="70" height="44" rx="6"/>
+      <rect x="500" y="380" width="70" height="44" rx="6"/><rect x="600" y="380" width="70" height="44" rx="6"/><rect x="700" y="380" width="70" height="44" rx="6"/><rect x="800" y="380" width="70" height="44" rx="6"/><rect x="900" y="380" width="70" height="44" rx="6"/><rect x="1000" y="380" width="70" height="44" rx="6"/><rect x="1100" y="380" width="70" height="44" rx="6"/>
+      <rect x="500" y="436" width="70" height="44" rx="6"/><rect x="600" y="436" width="70" height="44" rx="6"/><rect x="700" y="436" width="70" height="44" rx="6"/><rect x="800" y="436" width="70" height="44" rx="6"/><rect x="900" y="436" width="70" height="44" rx="6"/><rect x="1000" y="436" width="70" height="44" rx="6"/><rect x="1100" y="436" width="70" height="44" rx="6"/>
+    </g>
+    <!-- 값 일치(=) -->
+    <g fill="#F0524B" fill-opacity=".22" stroke="#F0524B" stroke-width="2.5">
+      <rect x="500" y="156" width="70" height="44" rx="6"/><rect x="600" y="156" width="70" height="44" rx="6"/><rect x="700" y="156" width="70" height="44" rx="6"/><rect x="800" y="156" width="70" height="44" rx="6"/><rect x="900" y="156" width="70" height="44" rx="6"/>
+      <rect x="500" y="268" width="70" height="44" rx="6"/><rect x="600" y="268" width="70" height="44" rx="6"/><rect x="800" y="268" width="70" height="44" rx="6"/><rect x="1000" y="268" width="70" height="44" rx="6"/>
+      <rect x="900" y="324" width="70" height="44" rx="6"/>
+    </g>
+    <g fill="#FF7A63" font-size="22" font-weight="900" text-anchor="middle">
+      <text x="535" y="186">=</text><text x="635" y="186">=</text><text x="735" y="186">=</text><text x="835" y="186">=</text><text x="935" y="186">=</text>
+      <text x="535" y="298">=</text><text x="635" y="298">=</text><text x="835" y="298">=</text><text x="1035" y="298">=</text>
+      <text x="935" y="354">=</text>
+    </g>
+    <!-- 자릿수 이상·열 밀림(!) -->
+    <g fill="#F0524B">
+      <rect x="900" y="212" width="70" height="44" rx="6"/>
+      <rect x="700" y="268" width="70" height="44" rx="6"/><rect x="1100" y="268" width="70" height="44" rx="6"/>
+      <rect x="1100" y="380" width="70" height="44" rx="6"/>
+      <rect x="900" y="436" width="70" height="44" rx="6"/>
+    </g>
+    <g fill="#FFFFFF" font-size="22" font-weight="900" text-anchor="middle">
+      <text x="935" y="242">!</text><text x="735" y="298">!</text><text x="1135" y="298">!</text><text x="1135" y="410">!</text><text x="935" y="466">!</text>
+    </g>
+  </g>
+  <text x="535" y="510" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="700">탄소발자국 칸에서는 2건만 보여요</text>
+</svg>

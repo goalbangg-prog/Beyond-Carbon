@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" width="1200" height="300" font-family="Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif">
+  <rect width="1200" height="300" rx="18" fill="#F4F7F1" stroke="#D7E2D8"/>
+  <text x="40" y="52" fill="#0F3B2A" font-size="22" font-weight="800">원료 2kg 가전에 기기선 1g을 넣으면</text>
+  <text x="40" y="80" fill="#56695D" font-size="15">전선 외 원료는 물발자국 중앙값(1kg당 4.51×10⁻³ m³)을 적용한 가상의 예</text>
+
+  <text x="40" y="132" fill="#0F3B2A" font-size="16" font-weight="700">무게 기준</text>
+  <rect x="190" y="114" width="820" height="26" rx="13" fill="#D7E2D8"/>
+  <rect x="190" y="114" width="8" height="26" rx="4" fill="#0F3B2A"/>
+  <text x="1030" y="134" fill="#13281D" font-size="22" font-weight="800">0.05%</text>
+
+  <text x="40" y="196" fill="#0F3B2A" font-size="16" font-weight="700">물발자국 기준</text>
+  <rect x="190" y="178" width="820" height="26" rx="13" fill="#D7E2D8"/>
+  <rect x="190" y="178" width="811" height="26" rx="13" fill="#E8902E"/>
+  <text x="1030" y="198" fill="#C76A12" font-size="22" font-weight="800">98.9%</text>
+
+  <line x1="40" x2="1160" y1="232" y2="232" stroke="#D7E2D8" stroke-dasharray="4 4"/>
+  <text x="40" y="266" fill="#2E4337" font-size="17">무게로는 <tspan fill="#0F3B2A" font-weight="800">0.05%</tspan>인 전선이, 물발자국으로는 <tspan fill="#C76A12" font-weight="800">98.9%</tspan>를 차지해요. 계수 하나가 제품 결과를 좌우할 수 있어요.</text>
+</svg>

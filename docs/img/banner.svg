@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="1200" height="400" font-family="Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif">
+  <defs>
+    <radialGradient id="g1" cx="85%" cy="10%" r="60%"><stop offset="0" stop-color="#C6E05A" stop-opacity=".22"/><stop offset="1" stop-color="#C6E05A" stop-opacity="0"/></radialGradient>
+    <radialGradient id="g2" cx="5%" cy="100%" r="55%"><stop offset="0" stop-color="#7DB547" stop-opacity=".2"/><stop offset="1" stop-color="#7DB547" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="1200" height="400" rx="20" fill="#0F3B2A"/>
+  <rect width="1200" height="400" rx="20" fill="url(#g1)"/>
+  <rect width="1200" height="400" rx="20" fill="url(#g2)"/>
+
+  <text x="60" y="78" fill="#C6E05A" font-size="20" font-weight="700">환경성적표지(EPD) 평가계수 398건 점검</text>
+  <text x="60" y="140" fill="#FFFFFF" font-size="48" font-weight="800">평가계수 398건 중</text>
+  <text x="60" y="202" fill="#FFFFFF" font-size="48" font-weight="800">입력 오류가 의심되는 <tspan fill="#C6E05A">6건</tspan></text>
+  <text x="60" y="252" fill="#C5D8C9" font-size="19">서로 다른 원료의 값이 일치하거나, 동종 원료보다 100만 배 이상 큰 계수가 있었어요.</text>
+
+  <g transform="translate(60,290)">
+    <rect width="250" height="76" rx="12" fill="#17503A" stroke="#C6E05A" stroke-opacity=".3"/>
+    <text x="20" y="32" fill="#C5D8C9" font-size="15">점검한 평가계수</text>
+    <text x="20" y="62" fill="#FFFFFF" font-size="26" font-weight="800">398건</text>
+    <rect x="270" width="250" height="76" rx="12" fill="#17503A" stroke="#C6E05A" stroke-opacity=".3"/>
+    <text x="290" y="32" fill="#C5D8C9" font-size="15">확인이 필요한 계수</text>
+    <text x="290" y="62" fill="#C6E05A" font-size="26" font-weight="800">6건</text>
+    <rect x="540" width="250" height="76" rx="12" fill="#17503A" stroke="#F0524B" stroke-opacity=".6"/>
+    <text x="560" y="32" fill="#C5D8C9" font-size="15">탄소발자국 외 범주</text>
+    <text x="560" y="62" fill="#FF7A63" font-size="26" font-weight="800">6건 중 4건</text>
+  </g>
+
+  <g transform="translate(900,60)">
+    <rect width="250" height="306" rx="14" fill="#17503A" stroke="#C6E05A" stroke-opacity=".25"/>
+    <text x="20" y="34" fill="#DCE9D8" font-size="15" font-weight="700">납 = 염소 ?</text>
+    <g font-size="13" fill="#E8F1E5">
+      <text x="20" y="72">자원발자국</text><text x="230" y="72" text-anchor="end" fill="#C6E05A" font-weight="700">0.003495642</text>
+      <text x="20" y="114">탄소발자국</text><text x="230" y="114" text-anchor="end" fill="#C6E05A" font-weight="700">0.392364067</text>
+      <text x="20" y="156">산성비</text><text x="230" y="156" text-anchor="end" fill="#C6E05A" font-weight="700">0.001125439</text>
+      <text x="20" y="198">부영양화</text><text x="230" y="198" text-anchor="end" fill="#C6E05A" font-weight="700">0.000163149</text>
+      <text x="20" y="240">물발자국</text><text x="230" y="240" text-anchor="end" fill="#C6E05A" font-weight="700">0.001283249</text>
+    </g>
+    <g stroke="#FFFFFF" stroke-opacity=".08"><line x1="20" x2="230" y1="88" y2="88"/><line x1="20" x2="230" y1="130" y2="130"/><line x1="20" x2="230" y1="172" y2="172"/><line x1="20" x2="230" y1="214" y2="214"/></g>
+    <text x="20" y="280" fill="#C5D8C9" font-size="12.5">금속과 기체의 5개 값이 9자리까지 일치</text>
+  </g>
+</svg>
