@@ -280,7 +280,7 @@
       </section>
 
       <section class="ch" id="c2"><header><span class="chno">2</span><h2>점검 방법</h2></header>
-        <p class="lead">탄소발자국과 다른 영향범주를 비교하던 중(4장) <b>납과 염소의 값이 모두 같다는 것</b>을 발견했어요. 같은 문제가 더 있는지 ${D.length}건 전체에 네 가지 기준을 적용했어요.</p>
+        <p class="lead">탄소발자국과 다른 영향범주를 비교하던 중(4장) <b>납과 염소의 값이 모두 같다는 것</b>을 발견했어요.<br>같은 문제가 더 있는지 ${D.length}건 전체에 네 가지 기준을 적용했어요.</p>
         <ol class="methods">
           <li><b>다중 범주 일치</b><p>서로 다른 원료의 3개 이상 범주 값이 소수점 끝자리까지 같은 경우</p><strong><span data-n="${rv.same_pairs.length}">0</span>쌍</strong></li>
           <li><b>단일 범주 일치</b><p>한 범주의 값이 다른 원료와 같은 경우 (위 두 쌍 제외)</p><strong><span data-n="${sharedExtra.length}">0</span>묶음</strong></li>
@@ -290,7 +290,7 @@
       </section>
 
       <section class="ch" id="c3"><header><span class="chno">3</span><h2>확인이 필요한 계수 6건</h2></header>
-        <p class="lead">입력 오류 가능성과 산정 결과에 미치는 영향이 큰 순서예요. <b>1~3번은 입력 오류의 흔적이 뚜렷하고</b>, 4~6번은 다른 설명의 여지도 있어요.</p>
+        <p class="lead">입력 오류 가능성과 산정 결과에 미치는 영향이 큰 순서예요.<br><b>1~3번은 입력 오류의 흔적이 뚜렷하고</b>, 4~6번은 다른 설명의 여지도 있어요.</p>
 
         <article class="flag f1"><header><span class="rank">1</span><div><h3>납과 염소: 5개 범주 값이 모두 일치</h3><p>금속과 기체로 생산 공정이 전혀 다른데, <b>값이 있는 5개 범주가 유효숫자 아홉 자리까지 같아요.</b> ${D.length}건 중 유일한 사례예요. <em class="warn">한쪽 값이 다른 쪽에 복사됐을 가능성이 커요.</em></p></div></header>
           <div id="pairLead"></div></article>
@@ -313,7 +313,7 @@
       </section>
 
       <section class="ch" id="c4"><header><span class="chno">4</span><h2>탄소발자국만 보면</h2></header>
-        <p class="lead">저탄소제품 인증을 비롯해 실무의 관심은 탄소발자국에 쏠려 있어요. 그렇다면 탄소발자국만 검토해도 위 6건을 찾을 수 있을까요? <b>6건 중 4건은 탄소발자국이 아닌 범주에 있어요.</b></p>
+        <p class="lead">저탄소제품 인증을 비롯해 실무의 관심은 탄소발자국에 쏠려 있어요.<br>그렇다면 탄소발자국만 검토해도 위 6건을 찾을 수 있을까요?<br><b>6건 중 4건은 탄소발자국이 아닌 범주에 있어요.</b></p>
         <div class="cview carbon" id="cview">
           <div class="cv-ctl">
             <div class="seg" role="group" aria-label="보기 전환"><button type="button" data-cv="carbon" aria-pressed="true">탄소발자국만 검토</button><button type="button" data-cv="all" aria-pressed="false">7개 범주 모두 검토</button></div>
@@ -326,7 +326,7 @@
           <p class="cv-msg" id="cvMsg"></p>
         </div>
         <h3 class="sub">왜 탄소발자국으로 대신할 수 없나요</h3>
-        <p class="sub-lead">계수 수준에서 탄소발자국과 다른 범주가 함께 움직이는지 원료 ${POOL.length}종으로 확인했어요. 산성비·자원발자국은 비례했지만, <b>물발자국은 거의 따로 움직였어요.</b></p>
+        <p class="sub-lead">계수 수준에서 탄소발자국과 다른 범주가 함께 움직이는지 원료 ${POOL.length}종으로 확인했어요.<br>산성비·자원발자국은 비례했지만, <b>물발자국은 거의 따로 움직였어요.</b></p>
         <div class="story">
           <div class="st-fig"><div class="st-sticky"><figure class="plotcard" id="stPlot"></figure><div class="meter" id="stMeter"></div></div></div>
           <div class="st-steps">${steps.map(([code, h, t], i) => `<article class="step" data-step="${code}"><span class="sn">${i + 1} / ${steps.length}</span><h3>${h}</h3><p>${t}</p></article>`).join('')}</div>
@@ -334,7 +334,7 @@
       </section>
 
       <section class="ch" id="c5"><header><span class="chno">5</span><h2>산정 결과에 미치는 영향</h2></header>
-        <p class="lead">위 계수를 그대로 쓰면 제품 산정 결과가 얼마나 달라지는지 가상의 제품 두 개로 계산했어요. 투입량은 설명을 위한 가정이에요.</p>
+        <p class="lead">위 계수를 그대로 쓰면 제품 산정 결과가 얼마나 달라지는지 가상의 제품 두 개로 계산했어요.<br>투입량은 설명을 위한 가정이에요.</p>
         <div class="examples">
           <article class="ex"><h3>예 1. 전선이 들어간 2kg 가전</h3>
             <p>전선 외 원료는 물발자국 중앙값(1kg당 ${L.fmt(wMed)}m³)을 적용했어요.</p>
@@ -391,7 +391,7 @@
       </section>
 
       <section class="ch" id="c7"><header><span class="chno">7</span><h2>분석 판단 기록</h2></header>
-        <p class="lead">판단이 필요했던 지점마다 이유와 대안을 기록했어요. 영향범주 비교에 관한 판단은 <a href="#notes">방법·출처</a> 탭에 있어요.</p>
+        <p class="lead">판단이 필요했던 지점마다 이유와 대안을 기록했어요.<br>영향범주 비교에 관한 판단은 <a href="#notes">방법·출처</a> 탭에 있어요.</p>
         <div class="dec">${decisions.map((d, i) => `<details${i === 0 ? ' open' : ''}><summary><span class="dn">${String(i + 1).padStart(2, '0')}</span><span class="dq">${d[0]}</span><span class="da">${d[1]}</span></summary><div class="db"><p><b>이유</b>${d[2]}</p><p><b>다르게 했다면</b>${d[3]}</p></div></details>`).join('')}</div>
       </section>
       </div>

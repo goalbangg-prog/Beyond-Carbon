@@ -77,7 +77,7 @@ mark { background: linear-gradient(transparent 52%, var(--lime) 52%); color: inh
 .ch > header { display: flex; align-items: baseline; gap: 14px; margin-bottom: 14px; }
 .chno { font-size: 15px; font-weight: 800; color: var(--lime); background: var(--forest); width: 30px; height: 30px; border-radius: 50%; display: inline-grid; place-items: center; flex: none; transform: translateY(-4px); }
 .ch h2 { font-size: 29px; font-weight: 800; letter-spacing: -0.03em; color: var(--forest); }
-.lead { font-size: 17px; color: var(--slate); max-width: 66ch; }
+.lead { font-size: 17px; color: var(--slate); max-width: 80ch; }
 .ch > .lead { margin-bottom: 28px; }
 .two { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start; }
 .two.wide-l { grid-template-columns: 1.15fr .85fr; }
