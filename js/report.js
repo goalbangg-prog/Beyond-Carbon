@@ -141,29 +141,44 @@
     L.onView(box, () => setTimeout(() => { if (auto) set('all'); }, L.reduce ? 0 : 1800));
   }
 
-  /* ---------- 예 1: 전선 무게 바꾸기 (무게 비중 vs 물발자국 비중) ---------- */
+  /* ---------- 예 1: 전선 무게 바꾸기 (같은 제품을 무게 기준 → 물발자국 기준으로) ---------- */
   function wireSlider() {
     const s = $('wireG'), box = $('wvi'); if (!s || !W1) return;
-    let shown = false, firstDone = false;
-    const pf = v => (v < 1 ? v.toFixed(2) : v.toFixed(1)) + '%';
+    let mode = 'w', cur = 0, auto = true;
+    const pf = v => (v < 1 || v > 99 ? v.toFixed(2) : v.toFixed(1)) + '%';
+    const calc = () => {
+      const g = +s.value / 1000, rest = 2 - g, rw = rest * W1.med, A = g * W1.wire + rw, B = g * W1.pvc + rw;
+      return { A, B, share: g * W1.wire / A * 100, wshare: g / 2 * 100 };
+    };
+    const tween = (to, d) => {
+      const from = cur, t0 = performance.now();
+      const st = t => { const p = L.reduce ? 1 : Math.min(1, (t - t0) / d), e = p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2, v = from + (to - from) * e;
+        cur = v; $('wvA').textContent = pf(v); $('wvB').textContent = pf(100 - v); if (p < 1) requestAnimationFrame(st); };
+      requestAnimationFrame(st);
+    };
+    const show = (m, byUser) => {
+      if (byUser) auto = false;
+      mode = m; const c = calc(), v = m === 'w' ? c.wshare : c.share;
+      box.classList.toggle('imp', m === 'i');
+      box.querySelectorAll('[data-wv]').forEach(b => b.setAttribute('aria-pressed', b.dataset.wv === m));
+      $('wvSeg').style.width = Math.max(m === 'w' ? 0.8 : 0, v) + '%';
+      tween(v, 1300);
+      $('wvQ').textContent = m === 'w' ? `제품 무게 2kg 중 전선 ${s.value}g` : '제품 물발자국 중 전선 기여';
+      $('wvCap').innerHTML = `무게로는 <b>${pf(c.wshare)}</b>인 전선이, 물발자국으로는 <b class="big">${pf(c.share)}</b>를 차지해요.`;
+    };
     const draw = () => {
-      const g = +s.value / 1000, rest = 2 - g, rw = rest * W1.med;
-      const A = g * W1.wire + rw, B = g * W1.pvc + rw, share = g * W1.wire / A * 100, wshare = g / 2 * 100, ratio = A / B;
+      const c = calc(), ratio = c.A / c.B;
       $('wireGv').textContent = s.value; s.style.setProperty('--p', ((s.value - 1) / 99 * 100) + '%');
-      $('ex1A').style.setProperty('--w', '100%'); $('ex1B').style.setProperty('--w', Math.max(0.4, B / A * 100) + '%');
-      $('ex1At').textContent = vol(A); $('ex1Bt').textContent = vol(B);
+      $('ex1A').style.setProperty('--w', '100%'); $('ex1B').style.setProperty('--w', Math.max(0.4, c.B / c.A * 100) + '%');
+      $('ex1At').textContent = vol(c.A); $('ex1Bt').textContent = vol(c.B);
       const r = ratio >= 100 ? (Math.round(ratio / 10) * 10).toLocaleString('ko-KR') : Math.round(ratio).toLocaleString('ko-KR');
       $('ex1R').innerHTML = `전선 ${s.value}g의 계수 선택만으로 제품 물발자국이 <b>약 ${r}배</b> 달라져요.`;
-      if (!shown) return;
-      $('wvW').style.width = Math.max(1.2, wshare) + '%'; $('wvI').style.width = share + '%';
-      const put = (id, v) => { const el = $(id); if (!firstDone && !L.reduce) { const t0 = performance.now(), d = 1400; const st = t => { const p = Math.min(1, (t - t0) / d), e = 1 - Math.pow(1 - p, 3); el.textContent = pf(v * e); if (p < 1) requestAnimationFrame(st); }; requestAnimationFrame(st); } else el.textContent = pf(v); };
-      put('wvWt', wshare); put('wvIt', share);
-      $('wvCap').innerHTML = `전선은 제품 무게의 <b>${pf(wshare)}</b>뿐인데, 물발자국의 <b class="big">${pf(share)}</b>를 차지해요.`;
-      firstDone = true;
-      box.classList.remove('pulse'); void box.offsetWidth; box.classList.add('pulse');
     };
-    s.addEventListener('input', draw); draw();
-    L.onView(box, () => { shown = true; box.classList.add('go'); setTimeout(draw, L.reduce ? 0 : 250); });
+    s.addEventListener('input', () => { draw(); show(mode); });
+    box.querySelectorAll('[data-wv]').forEach(b => b.addEventListener('click', () => show(b.dataset.wv, true)));
+    draw(); show('w');
+    // 화면에 들어오면 무게 기준을 잠시 보여 준 뒤 물발자국 기준으로 바꿔 보여 준다
+    L.onView(box, () => setTimeout(() => { if (auto) show('i'); }, L.reduce ? 0 : 1200));
   }
 
   /* ---------- 계산 예시의 막대 ---------- */
@@ -324,8 +339,9 @@
           <article class="ex"><h3>예 1. 전선이 들어간 2kg 가전</h3>
             <p>전선 외 원료는 물발자국 중앙값(1kg당 ${L.fmt(wMed)}m³)을 적용했어요.</p>
             <div class="wvi" id="wvi">
-              <div class="wvi-row"><span class="wvi-l">제품 무게 중<br>전선 비중</span><div class="wvi-t"><i id="wvW"></i></div><b id="wvWt">0%</b></div>
-              <div class="wvi-row hi"><span class="wvi-l">제품 물발자국 중<br>전선 비중</span><div class="wvi-t"><i id="wvI"></i></div><b id="wvIt">0%</b></div>
+              <div class="wvi-head"><div class="seg2" role="group" aria-label="비중 기준"><button type="button" data-wv="w" aria-pressed="true">무게 기준</button><button type="button" data-wv="i" aria-pressed="false">물발자국 기준</button></div><span class="wvi-q" id="wvQ"></span></div>
+              <div class="wvi-bar" aria-hidden="true"><i class="sw" id="wvSeg"></i><i class="sr"></i></div>
+              <div class="wvi-leg"><span><i class="dw"></i>전선 <b id="wvA">0%</b></span><span><i class="dr"></i>그 외 원료 <b id="wvB">100%</b></span></div>
               <p class="wvi-cap" id="wvCap"></p>
             </div>
             <div class="wslider"><label for="wireG">전선 투입량</label><input type="range" id="wireG" min="1" max="100" step="1" value="1"><output><b id="wireGv">1</b>g</output></div>

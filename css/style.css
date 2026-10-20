@@ -605,24 +605,27 @@ input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 
 .flag .tbl tr.chk td { background: var(--amber-soft); }
 .flag .tbl tr.chk td:first-child { box-shadow: inset 3px 0 0 var(--amber); }
 
-/* 5장 예 1: 무게 비중 vs 물발자국 비중 */
-.wvi { margin-top: 14px; background: var(--forest); border-radius: var(--r-m); padding: 18px 18px 14px; color: #DCE9D8; }
-.wvi-row { display: grid; grid-template-columns: 112px 1fr 76px; gap: 12px; align-items: center; margin-bottom: 12px; }
-.wvi-l { font-size: 12.5px; line-height: 1.35; color: #C5D8C9; }
-.wvi-t { position: relative; height: 26px; border-radius: 6px; background: rgba(255, 255, 255, .08); overflow: hidden; }
-.wvi-t i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 6px; background: var(--sage); transition: width 1.4s cubic-bezier(.2, .8, .2, 1); }
-.wvi-row.hi .wvi-t i { background: linear-gradient(90deg, #F0524B, var(--amber)); box-shadow: 0 0 18px rgba(240, 82, 75, .45); }
-.wvi-row:not(.hi) .wvi-t i { background: var(--lime); box-shadow: 0 0 10px rgba(198, 224, 90, .8); }
-.wvi-row b { font-size: 18px; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; color: var(--lime); }
-.wvi-row.hi b { font-size: 26px; color: #FF7A63; letter-spacing: -0.02em; }
-.ex .wvi-cap { margin: 4px 0 0; font-size: 14.5px; color: #DCE9D8; }
-.wvi-cap b { color: var(--lime); }
-.wvi-cap b.big { color: #FF7A63; font-size: 17px; }
-.wvi.pulse .wvi-row.hi .wvi-t i { animation: barGlow 1.2s ease 1.2s 1; }
-.wvi.pulse .wvi-row.hi b { animation: numPop .6s cubic-bezier(.34, 1.56, .64, 1) 1.3s 1; }
-@keyframes barGlow { 0% { box-shadow: 0 0 18px rgba(240, 82, 75, .45); } 50% { box-shadow: 0 0 34px rgba(240, 82, 75, .9); } 100% { box-shadow: 0 0 18px rgba(240, 82, 75, .45); } }
-@keyframes numPop { 0% { transform: scale(1); } 50% { transform: scale(1.18); } 100% { transform: scale(1); } }
-.wvi-row b { display: inline-block; transform-origin: right center; }
+/* 5장 예 1: 같은 제품, 무게 기준 → 물발자국 기준 */
+.wvi { margin-top: 14px; padding: 16px 18px 14px; border: 1px solid var(--rule); border-radius: var(--r-m); background: var(--paper); }
+.wvi-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.seg2 { display: inline-flex; padding: 3px; border-radius: 999px; background: #fff; border: 1px solid var(--rule); }
+.seg2 button { font: 600 13px var(--sans); color: var(--slate); background: none; border: 0; border-radius: 999px; padding: 6px 14px; cursor: pointer; transition: background .35s, color .35s; }
+.seg2 button[aria-pressed="true"] { background: var(--forest); color: #fff; }
+.wvi-q { font-size: 12.5px; color: var(--slate); text-align: right; }
+.wvi-bar { display: flex; height: 14px; border-radius: 999px; overflow: hidden; background: var(--rule); }
+.wvi-bar .sw { flex: none; width: 0; background: var(--forest); transition: width 1.3s cubic-bezier(.65, 0, .35, 1), background .6s ease; }
+.wvi-bar .sr { flex: 1; background: var(--rule); }
+.wvi.imp .wvi-bar .sw { background: var(--amber); }
+.wvi-leg { display: flex; gap: 20px; margin-top: 10px; font-size: 13px; color: var(--slate); }
+.wvi-leg span { display: inline-flex; align-items: baseline; gap: 6px; }
+.wvi-leg i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; align-self: center; }
+.wvi-leg .dw { background: var(--forest); transition: background .6s; } .wvi.imp .wvi-leg .dw { background: var(--amber); }
+.wvi-leg .dr { background: var(--sage); }
+.wvi-leg b { font-size: 20px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; min-width: 4.2em; display: inline-block; }
+.wvi.imp .wvi-leg span:first-child b { color: #C76A12; }
+.ex .wvi-cap { margin: 10px 0 0; padding-top: 10px; border-top: 1px dashed var(--rule); font-size: 14px; color: #2E4337; }
+.ex .wvi-cap b { color: var(--forest); }
+.ex .wvi-cap b.big { color: #C76A12; }
 @media (prefers-reduced-motion: reduce) {
   .rv, .impacts > div, .claim, .cview .cv-t, .hero .kicker, .hero h1 .ln, .hero .lead, .hero .scope, .hero-fig, .sum > div, .hero .cue, .hero-cmp .cmp tbody tr, .flag .cmp tbody tr, .flag .tbl tbody tr, .flag .shift-call, .formula .f-t { opacity: 1 !important; transform: none !important; }
   .flag .rank, .ch > header .chno, .flag .cmp .eq, .hero-cmp .cmp .eq { transform: none !important; }
